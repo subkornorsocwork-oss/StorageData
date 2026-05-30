@@ -64,6 +64,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           setFullName("");
           setProfile(null);
           setLoading(false);
+          window.location.href = "/login";
         }
       }
     );

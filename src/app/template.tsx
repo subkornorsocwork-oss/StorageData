@@ -39,13 +39,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
     }
   }, [loading, role, isLoginPage, isAdminPage, router]);
 
-  // Listen sign out only
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") router.push("/login");
-    });
-    return () => subscription.unsubscribe();
-  }, [router]);
+  
 
   // กำลัง redirect ไป /login — ไม่ต้องแสดงอะไร
   if (!loading && !role && !isLoginPage) {
