@@ -22,47 +22,47 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
 
-      // 1. คำขอจองรออนุมัติ
-      const { count: pendingCount } = await supabase
+      const { count: pendingCount, error: e1 } = await supabase
         .from("bookings")
         .select("*", { count: "exact", head: true })
         .eq("status", "pending");
+      if (e1) console.error("❌ bookings:", e1.message);
 
-      // 2. อุปกรณ์เกินกำหนดคืน
       const today = new Date().toISOString();
-      const { count: overdueCount } = await supabase
+      const { count: overdueCount, error: e2 } = await supabase
         .from("borrow_requests")
         .select("*", { count: "exact", head: true })
         .eq("status", "approved")
         .is("actual_return", null)
         .lt("return_due_date", today);
+      if (e2) console.error("❌ borrow_requests:", e2.message);
 
-      // 3. ผู้ใช้งานทั้งหมด
-      const { count: userCount } = await supabase
+      const { count: userCount, error: e3 } = await supabase
         .from("profiles")
         .select("*", { count: "exact", head: true });
+      if (e3) console.error("❌ profiles count:", e3.message);
 
-      // 4. ของหายเดือนนี้
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
-      const { count: lostCount } = await supabase
+      const { count: lostCount, error: e4 } = await supabase
         .from("lost_and_found")
         .select("*", { count: "exact", head: true })
         .gte("created_at", startOfMonth.toISOString());
+      if (e4) console.error("❌ lost_and_found:", e4.message);
 
-      // 5. รายการจองรออนุมัติ 5 รายการล่าสุด
-      const { data: bookingsData } = await supabase
+      const { data: bookingsData, error: e5 } = await supabase
         .from("bookings")
         .select(`id, created_at, location, profiles ( full_name )`)
         .eq("status", "pending")
         .order("created_at", { ascending: false })
         .limit(5);
+      if (e5) console.error("❌ bookings list:", e5.message);
 
-      // 6. สัดส่วนผู้ใช้ student vs admin
-      const { data: profilesData } = await supabase
+      const { data: profilesData, error: e6 } = await supabase
         .from("profiles")
         .select("role");
+      if (e6) console.error("❌ profiles role:", e6.message);
       if (profilesData) {
         const roleCounts: Record<string, number> = {};
         profilesData.forEach(p => {
@@ -72,10 +72,10 @@ export default function AdminDashboard() {
         setUserStats(Object.entries(roleCounts).map(([name, value]) => ({ name, value })));
       }
 
-      // 7. คณะที่มาใช้บริการ
-      const { data: facultyData } = await supabase
+      const { data: facultyData, error: e7 } = await supabase
         .from("profiles")
         .select("faculty");
+      if (e7) console.error("❌ profiles faculty:", e7.message);
       if (facultyData) {
         const counts: Record<string, number> = {};
         facultyData.forEach(p => {
@@ -84,21 +84,22 @@ export default function AdminDashboard() {
         setFacultyStats(Object.entries(counts).map(([name, value]) => ({ name, value })));
       }
 
-      // 8. พัสดุที่ถูกยืมมากที่สุด (join borrow_items → equipment.name)
-      const { data: borrowItemsData } = await supabase
+      const { data: borrowItemsData, error: e8 } = await supabase
         .from("borrow_items")
         .select(`quantity, equipment ( name )`);
+      if (e8) console.error("❌ borrow_items:", e8.message);
       if (borrowItemsData) {
         const counts: Record<string, number> = {};
         borrowItemsData.forEach((b: any) => {
           const name = b.equipment?.name;
           if (name) counts[name] = (counts[name] || 0) + (b.quantity || 1);
         });
-        const sorted = Object.entries(counts)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 5)
-          .map(([name, value]) => ({ name, value }));
-        setItemStats(sorted);
+        setItemStats(
+          Object.entries(counts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([name, value]) => ({ name, value }))
+        );
       }
 
       setStats({
@@ -111,7 +112,7 @@ export default function AdminDashboard() {
       if (bookingsData) setPendingList(bookingsData);
 
     } catch (error) {
-      console.error("Error fetching dashboard data:", error);
+      console.error("❌ Dashboard fetch error:", error);
     } finally {
       setLoading(false);
     }
@@ -135,14 +136,14 @@ export default function AdminDashboard() {
   };
 
   const CustomPieChart = ({ data, title }: { data: any[], title: string }) => (
-    <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "20px", boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
+    <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "20px", boxShadow: "0 4px 6px rgba(0,0,0,0.05)", minHeight: "320px" }}>
       <h3 style={{ marginTop: 0, color: "#475569", textAlign: "center", fontSize: "1.1rem" }}>{title}</h3>
       {data.length === 0 ? (
         <div style={{ height: "250px", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" }}>
           ไม่มีข้อมูล
         </div>
       ) : (
-        <div style={{ height: "250px" }}>
+        <div style={{ height: "250px", width: "100%" }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
@@ -160,7 +161,19 @@ export default function AdminDashboard() {
   );
 
   if (loading) {
-    return <div style={{ textAlign: "center", padding: "50px", color: "#64748b" }}>กำลังโหลดสถิติแดชบอร์ด...</div>;
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{
+            width: "48px", height: "48px", borderRadius: "50%",
+            border: "4px solid #e2e8f0", borderTop: "4px solid #800000",
+            animation: "spin 0.8s linear infinite", margin: "0 auto 16px"
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <p style={{ color: "#64748b" }}>กำลังโหลดสถิติแดชบอร์ด...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
