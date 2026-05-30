@@ -53,10 +53,24 @@ export default function Template({ children }: { children: React.ReactNode }) {
   }
 
   // หน้า admin ตอน loading — ไม่แสดง skeleton student
-  if (loading && isAdminPage) {
-    return null;
-  }
-
+ // หน้า admin ตอน loading — แสดง spinner แทน null
+if (loading && isAdminPage) {
+  return (
+    <div style={{
+      display: "flex", height: "100vh",
+      alignItems: "center", justifyContent: "center",
+      backgroundColor: "#1a1a2e"
+    }}>
+      <div style={{
+        width: "48px", height: "48px", borderRadius: "50%",
+        border: "4px solid #ffffff20",
+        borderTop: "4px solid #800000",
+        animation: "spin 0.8s linear infinite"
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
   // Skeleton — แสดงเฉพาะหน้า student ตอน loading ครั้งแรก
   if (loading && !isLoginPage && !isAdminPage) {
     return (
