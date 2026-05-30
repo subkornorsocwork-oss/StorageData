@@ -16,7 +16,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
   const { role, fullName, profile, loading } = useRole();
 
   useEffect(() => {
-    if (loading) return; // รอ context โหลดเสร็จก่อน
+    if (loading) return;
 
     if (!role && !isLoginPage) {
       router.push("/login");
@@ -39,7 +39,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
     }
   }, [loading, role, isLoginPage, isAdminPage, router]);
 
-  // Listen sign out only (role change handled by context)
+  // Listen sign out only
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") router.push("/login");
@@ -47,7 +47,12 @@ export default function Template({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [router]);
 
-  // แสดง skeleton เฉพาะตอน context กำลัง load ครั้งแรก
+  // ✅ กำลัง redirect ไป /login — ไม่ต้องแสดงอะไร
+  if (!loading && !role && !isLoginPage) {
+    return null;
+  }
+
+  // ✅ Skeleton — แสดงแค่ตอน loading ครั้งแรก
   if (loading && !isLoginPage) {
     return (
       <div style={{ display: "flex", height: "100vh", backgroundColor: "#f8fafc", overflow: "hidden" }}>
