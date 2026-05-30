@@ -47,13 +47,18 @@ export default function Template({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [router]);
 
-  // ✅ กำลัง redirect ไป /login — ไม่ต้องแสดงอะไร
+  // กำลัง redirect ไป /login — ไม่ต้องแสดงอะไร
   if (!loading && !role && !isLoginPage) {
     return null;
   }
 
-  // ✅ Skeleton — แสดงแค่ตอน loading ครั้งแรก
-  if (loading && !isLoginPage) {
+  // หน้า admin ตอน loading — ไม่แสดง skeleton student
+  if (loading && isAdminPage) {
+    return null;
+  }
+
+  // Skeleton — แสดงเฉพาะหน้า student ตอน loading ครั้งแรก
+  if (loading && !isLoginPage && !isAdminPage) {
     return (
       <div style={{ display: "flex", height: "100vh", backgroundColor: "#f8fafc", overflow: "hidden" }}>
         <style dangerouslySetInnerHTML={{
