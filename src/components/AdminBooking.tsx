@@ -32,6 +32,11 @@ interface Location {
   is_active: boolean;
 }
 
+interface BookingDocuments {
+  bookingForm: string | null;
+  studentCard: string | null;
+}
+
 // ─── Constants ────────────────────────────────────────────────
 
 const THAI_MONTHS_SHORT = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
@@ -43,6 +48,27 @@ const fmtDate = (d: string) => {
   return `${Number(day)} ${THAI_MONTHS_SHORT[Number(m) - 1]} ${Number(y) + 543}`;
 };
 const fmtTime = (t: string) => t.slice(0, 5);
+
+const parseBookingDocuments = (raw: string | null): BookingDocuments | null => {
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as { bookingForm?: unknown; studentCard?: unknown };
+    if (parsed && typeof parsed === "object") {
+      return {
+        bookingForm: typeof parsed.bookingForm === "string" ? parsed.bookingForm : null,
+        studentCard: typeof parsed.studentCard === "string" ? parsed.studentCard : null,
+      };
+    }
+  } catch {
+    return { bookingForm: raw, studentCard: null };
+  }
+
+  return null;
+};
+
+const isPreviewableImage = (url: string) => /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(url);
+const isPreviewablePdf = (url: string) => /\.pdf(\?|$)/i.test(url);
 
 const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> = {
   pending:  { label: "รอตรวจสอบ", color: "#b45309", bg: "#fef3c7" },
@@ -87,6 +113,13 @@ export default function AdminBooking() {
 
   // feedback modal
   const [fb, setFb] = useState({ isOpen: false, status: "loading" as "loading"|"success"|"error", title: "", message: "" });
+  const [documentModal, setDocumentModal] = useState<{
+    isOpen: boolean;
+    booking: BookingRow | null;
+    documents: BookingDocuments | null;
+    activeUrl: string | null;
+    activeLabel: string;
+  }>({ isOpen: false, booking: null, documents: null, activeUrl: null, activeLabel: "" });
 
   // ─── Load bookings ──────────────────────────────────────────
 
@@ -99,7 +132,9 @@ export default function AdminBooking() {
     setLoadingBookings(false);
   }, [filterStatus]);
 
-  useEffect(() => { loadBookings(); }, [loadBookings]);
+  useEffect(() => {
+    void loadBookings();
+  }, [loadBookings]);
 
   // ─── Load locations ─────────────────────────────────────────
 
@@ -110,7 +145,9 @@ export default function AdminBooking() {
     setLoadingLoc(false);
   }, []);
 
-  useEffect(() => { loadLocations(); }, [loadLocations]);
+  useEffect(() => {
+    void loadLocations();
+  }, [loadLocations]);
 
   // ─── Filter bookings ────────────────────────────────────────
 
@@ -214,6 +251,22 @@ export default function AdminBooking() {
 
   const approvedBookings = bookings.filter(b => b.status === "approved");
 
+  const openDocumentModal = (booking: BookingRow) => {
+    const documents = parseBookingDocuments(booking.document_url);
+    if (!documents) return;
+
+    const firstUrl = documents.bookingForm || documents.studentCard || null;
+    const firstLabel = documents.bookingForm ? "แบบฟอร์มขอใช้สถานที่" : documents.studentCard ? "สำเนาบัตรนักศึกษา" : "";
+
+    setDocumentModal({
+      isOpen: true,
+      booking,
+      documents,
+      activeUrl: firstUrl,
+      activeLabel: firstLabel,
+    });
+  };
+
   // ─── Render ──────────────────────────────────────────────────
 
   return (
@@ -305,11 +358,12 @@ export default function AdminBooking() {
                               <div style={{ fontSize: "0.78rem", color: "#94a3b8" }}>{b.org_name ?? b.user_faculty ?? b.student_id ?? ""}</div>
                             </td>
                             <td style={{ padding: "14px 16px" }}>
-                              {b.document_url ? (
-                                <a href={b.document_url} target="_blank" rel="noreferrer"
-                                  style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "5px 10px", backgroundColor: "#f1f5f9", color: "#475569", borderRadius: "7px", textDecoration: "none", fontSize: "0.8rem", fontWeight: 600 }}>
+                              {parseBookingDocuments(b.document_url) ? (
+                                <button
+                                  onClick={() => openDocumentModal(b)}
+                                  style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "5px 10px", backgroundColor: "#f1f5f9", color: "#475569", borderRadius: "7px", border: "none", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer" }}>
                                   📄 ดูไฟล์
-                                </a>
+                                </button>
                               ) : <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>ไม่มีไฟล์</span>}
                             </td>
                             <td style={{ padding: "14px 16px" }}>
@@ -438,6 +492,79 @@ export default function AdminBooking() {
       </div>
 
       {/* ══ Feedback Modal ══ */}
+      {documentModal.isOpen && documentModal.booking && documentModal.documents && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.55)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 10001, padding: "20px" }}>
+          <div style={{ backgroundColor: "white", borderRadius: "22px", width: "100%", maxWidth: "980px", maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+              <div>
+                <h3 style={{ margin: "0 0 6px", color: "#1e293b" }}>เอกสารแนบการจองสถานที่</h3>
+                <div style={{ fontSize: "0.85rem", color: "#64748b" }}>
+                  {documentModal.booking.user_name} • {documentModal.booking.location_name} • {fmtDate(documentModal.booking.booking_date)}
+                </div>
+              </div>
+              <button
+                onClick={() => setDocumentModal({ isOpen: false, booking: null, documents: null, activeUrl: null, activeLabel: "" })}
+                style={{ border: "none", background: "#f1f5f9", width: "38px", height: "38px", borderRadius: "999px", cursor: "pointer", fontSize: "1rem", fontWeight: 700, color: "#475569" }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: "16px 24px", borderBottom: "1px solid #f1f5f9", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              {documentModal.documents.bookingForm && (
+                <button
+                  onClick={() => setDocumentModal(prev => ({ ...prev, activeUrl: prev.documents?.bookingForm ?? null, activeLabel: "แบบฟอร์มขอใช้สถานที่" }))}
+                  style={{ padding: "9px 14px", borderRadius: "10px", border: "none", cursor: "pointer", fontWeight: 700, backgroundColor: documentModal.activeLabel === "แบบฟอร์มขอใช้สถานที่" ? "#800000" : "#f1f5f9", color: documentModal.activeLabel === "แบบฟอร์มขอใช้สถานที่" ? "white" : "#475569" }}
+                >
+                  แบบฟอร์มขอใช้สถานที่
+                </button>
+              )}
+              {documentModal.documents.studentCard && (
+                <button
+                  onClick={() => setDocumentModal(prev => ({ ...prev, activeUrl: prev.documents?.studentCard ?? null, activeLabel: "สำเนาบัตรนักศึกษา" }))}
+                  style={{ padding: "9px 14px", borderRadius: "10px", border: "none", cursor: "pointer", fontWeight: 700, backgroundColor: documentModal.activeLabel === "สำเนาบัตรนักศึกษา" ? "#800000" : "#f1f5f9", color: documentModal.activeLabel === "สำเนาบัตรนักศึกษา" ? "white" : "#475569" }}
+                >
+                  สำเนาบัตรนักศึกษา
+                </button>
+              )}
+              {documentModal.activeUrl && (
+                <a
+                  href={documentModal.activeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ marginLeft: "auto", padding: "9px 14px", borderRadius: "10px", backgroundColor: "#e0f2fe", color: "#0369a1", textDecoration: "none", fontWeight: 700 }}
+                >
+                  เปิดไฟล์ในแท็บใหม่
+                </a>
+              )}
+            </div>
+
+            <div style={{ flex: 1, minHeight: "420px", backgroundColor: "#f8fafc", padding: "20px" }}>
+              {documentModal.activeUrl ? (
+                isPreviewableImage(documentModal.activeUrl) ? (
+                  <div style={{ width: "100%", height: "100%", overflow: "auto", textAlign: "center" }}>
+                    <img src={documentModal.activeUrl} alt={documentModal.activeLabel} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }} />
+                  </div>
+                ) : isPreviewablePdf(documentModal.activeUrl) ? (
+                  <iframe title={documentModal.activeLabel} src={documentModal.activeUrl} style={{ width: "100%", height: "100%", minHeight: "420px", border: "none", borderRadius: "12px", backgroundColor: "white" }} />
+                ) : (
+                  <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "12px", color: "#64748b" }}>
+                    <div style={{ fontSize: "1rem", fontWeight: 600 }}>ไม่สามารถพรีวิวไฟล์ประเภทนี้ได้ในหน้าเว็บ</div>
+                    <a href={documentModal.activeUrl} target="_blank" rel="noreferrer" style={{ padding: "10px 14px", borderRadius: "10px", backgroundColor: "#800000", color: "white", textDecoration: "none", fontWeight: 700 }}>
+                      เปิดไฟล์
+                    </a>
+                  </div>
+                )
+              ) : (
+                <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" }}>
+                  ไม่พบเอกสารแนบ
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {fb.isOpen && (
         <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 9999 }}>
           <div style={{ backgroundColor: "white", padding: "32px", borderRadius: "20px", width: "100%", maxWidth: "380px", textAlign: "center" }}>
