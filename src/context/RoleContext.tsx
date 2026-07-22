@@ -10,6 +10,8 @@ export interface UserProfile {
   faculty: string;
   email: string;
   role: "student" | "admin";
+  phone?: string | null;
+  department?: string | null;
 }
 
 const RoleContext = createContext<{

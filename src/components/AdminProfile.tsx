@@ -1,13 +1,14 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-// 🚨 อย่าลืมเปลี่ยนพาธตามที่เก็บไฟล์ supabase client จริงของคุณนะครับ
-import { supabase } from "@/lib/supabase"; 
+import { supabase } from "@/lib/supabase";
+import { useRole } from "@/context/RoleContext";
 
 export default function AdminProfile() {
-  const router = useRouter(); 
+  const router = useRouter();
+  const { profile, fullName, loading: roleLoading } = useRole();
 
-  // State สำหรับเก็บข้อมูลจริงจากฐานข้อมูล
   const [adminInfo, setAdminInfo] = useState({
     id: "",
     name: "กำลังโหลด...",
@@ -16,95 +17,62 @@ export default function AdminProfile() {
     phone: "-",
     department: "-",
   });
-
-  const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-
-  // State สำหรับรับค่าอินพุตตอนแก้ไขข้อมูล
   const [editPhone, setEditPhone] = useState("");
   const [editDepartment, setEditDepartment] = useState("");
 
-  // 1. ฟังก์ชันดึงข้อมูลโปรไฟล์ของคนที่ล็อกอินจาก Supabase
-  const fetchProfile = async () => {
-    try {
-      setLoading(true);
-      // ดึง User ปัจจุบันจากระบบ Auth
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        router.push("/login");
-        return;
-      }
-
-      // ดึงข้อมูลเสริมจากตาราง profiles
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (profile) {
-        setAdminInfo({
-          id: user.id,
-          name: profile.full_name || "ไม่ระบุชื่อ",
-          role: profile.role === "admin" ? "ผู้ดูแลระบบ (Super Admin)" : "ผู้ใช้งานทั่วไป",
-          email: profile.email || user.email || "",
-          phone: profile.phone || "-",
-          department: profile.department || "-",
-        });
-        // ตั้งค่าเริ่มต้นให้กับ Input ตอนแก้ไข
-        setEditPhone(profile.phone || "");
-        setEditDepartment(profile.department || "");
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ดึงข้อมูลทันทีที่เปิดหน้าเว็บ
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    if (!profile) return;
 
-  // 2. ฟังก์ชันอัปเดตข้อมูลไปยังฐานข้อมูล (เมื่อกดบันทึกแก้ไข)
+    const nextInfo = {
+      id: profile.id,
+      name: profile.full_name || fullName || "ไม่ระบุชื่อ",
+      role: profile.role === "admin" ? "ผู้ดูแลระบบ (Super Admin)" : "ผู้ใช้งานทั่วไป",
+      email: profile.email || "",
+      phone: profile.phone || "-",
+      department: profile.department || "-",
+    };
+
+    setAdminInfo(nextInfo);
+    setEditPhone(profile.phone || "");
+    setEditDepartment(profile.department || "");
+  }, [profile, fullName]);
+
   const handleSaveChanges = async () => {
+    if (!adminInfo.id) return;
+
     try {
       const { error } = await supabase
         .from("profiles")
         .update({
           phone: editPhone,
-          department: editDepartment
+          department: editDepartment,
         })
         .eq("id", adminInfo.id);
 
       if (error) throw error;
-      
-      // อัปเดตข้อมูลที่แสดงบนหน้าจอ
-      setAdminInfo(prev => ({ ...prev, phone: editPhone, department: editDepartment }));
+
+      setAdminInfo((prev) => ({
+        ...prev,
+        phone: editPhone,
+        department: editDepartment,
+      }));
       setIsEditModalOpen(false);
       alert("อัปเดตข้อมูลสำเร็จ!");
-    } catch (error: any) {
-      alert("เกิดข้อผิดพลาด: " + error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "ไม่ทราบสาเหตุ";
+      alert("เกิดข้อผิดพลาด: " + message);
     }
   };
 
-  // 3. ฟังก์ชันออกจากระบบจริงผ่าน Supabase Auth
   const confirmLogout = async () => {
     await supabase.auth.signOut();
     setIsLogoutModalOpen(false);
-    router.push("/login"); 
+    router.replace("/login");
   };
-
-  // ประวัติการทำงาน (Mock ชั่วคราว หรือดึงจากตาราง logs ในอนาคต)
-  const activityLogs = [
-    { id: 1, action: "เพิ่มประกาศใหม่: แจ้งปิดปรับปรุงระบบ", date: "14 เม.ย. 2026", time: "10:30 น." },
-    { id: 2, action: "อนุมัติการจองสถานที่: ลานกิจกรรม กิจกรรมรับน้อง", date: "13 เม.ย. 2026", time: "15:45 น." },
-  ];
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -112,9 +80,39 @@ export default function AdminProfile() {
     }
   };
 
-  if (loading) {
+  if (roleLoading) {
     return <div style={{ textAlign: "center", padding: "50px", color: "#64748b" }}>กำลังเชื่อมต่อฐานข้อมูล...</div>;
   }
+
+  if (!profile) {
+    return (
+      <div style={{ backgroundColor: "white", padding: "32px", borderRadius: "16px", boxShadow: "0 4px 6px rgba(0,0,0,0.06)" }}>
+        <h2 style={{ marginTop: 0, color: "#1e293b" }}>ไม่พบข้อมูลโปรไฟล์</h2>
+        <p style={{ color: "#64748b", lineHeight: 1.8 }}>
+          ระบบเชื่อมต่อบัญชีได้แล้ว แต่ยังอ่านข้อมูลจากตาราง profiles ไม่สำเร็จ
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            padding: "10px 16px",
+            border: "none",
+            borderRadius: "10px",
+            backgroundColor: "#800000",
+            color: "white",
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          โหลดใหม่
+        </button>
+      </div>
+    );
+  }
+
+  const activityLogs = [
+    { id: 1, action: "เพิ่มประกาศใหม่: แจ้งปิดปรับปรุงระบบ", date: "14 เม.ย. 2026", time: "10:30 น." },
+    { id: 2, action: "อนุมัติการจองสถานที่: ลานกิจกรรม", date: "13 เม.ย. 2026", time: "15:45 น." },
+  ];
 
   return (
     <div style={{ padding: "40px", maxWidth: "900px", margin: "0 auto" }}>
@@ -123,30 +121,56 @@ export default function AdminProfile() {
       </h1>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "30px", alignItems: "start" }}>
-        {/* คอลัมน์ซ้าย: การ์ดโปรไฟล์ */}
         <div style={{ backgroundColor: "white", padding: "30px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", textAlign: "center" }}>
-          <div style={{ width: "120px", height: "120px", backgroundColor: "#f1f5f9", borderRadius: "50%", margin: "0 auto 20px", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "3rem", border: "4px solid #800000", overflow: "hidden" }}>
-            {profileImage ? (
-              <img src={profileImage} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            ) : (
-              "🧑‍💼"
-            )}
+          <div
+            style={{
+              width: "120px",
+              height: "120px",
+              backgroundColor: "#f1f5f9",
+              borderRadius: "50%",
+              margin: "0 auto 20px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              fontSize: "3rem",
+              border: "4px solid #800000",
+              overflow: "hidden",
+            }}
+          >
+            {profileImage ? <img src={profileImage} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "🧑‍💼"}
           </div>
 
           <h2 style={{ margin: "0 0 5px 0", color: "#1e293b", fontSize: "1.4rem" }}>{adminInfo.name}</h2>
           <p style={{ margin: "0 0 20px 0", color: "#800000", fontWeight: "bold", fontSize: "0.9rem" }}>{adminInfo.role}</p>
-          
+
           <input type="file" id="profile-upload" accept="image/*" onChange={handleImageUpload} style={{ display: "none" }} />
-          <label htmlFor="profile-upload" style={{ display: "block", width: "100%", padding: "10px", backgroundColor: "white", border: "1px solid #cbd5e1", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", color: "#475569", marginBottom: "10px", boxSizing: "border-box" }}>
+          <label
+            htmlFor="profile-upload"
+            style={{
+              display: "block",
+              width: "100%",
+              padding: "10px",
+              backgroundColor: "white",
+              border: "1px solid #cbd5e1",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontWeight: "bold",
+              color: "#475569",
+              marginBottom: "10px",
+              boxSizing: "border-box",
+            }}
+          >
             📷 เปลี่ยนรูปโปรไฟล์
           </label>
 
-          <button onClick={() => setIsLogoutModalOpen(true)} style={{ width: "100%", padding: "10px", backgroundColor: "#ef4444", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", color: "white" }}>
+          <button
+            onClick={() => setIsLogoutModalOpen(true)}
+            style={{ width: "100%", padding: "10px", backgroundColor: "#ef4444", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", color: "white" }}
+          >
             🚪 ออกจากระบบ
           </button>
         </div>
 
-        {/* คอลัมน์ขวา: ข้อมูลและประวัติ */}
         <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
           <div style={{ backgroundColor: "white", padding: "25px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #f1f5f9", paddingBottom: "10px", marginBottom: "20px" }}>
@@ -155,7 +179,7 @@ export default function AdminProfile() {
                 ✏️ แก้ไขข้อมูล
               </button>
             </div>
-            
+
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
               <div>
                 <p style={{ margin: "0 0 5px 0", color: "#64748b", fontSize: "0.85rem" }}>อีเมล</p>
@@ -171,14 +195,16 @@ export default function AdminProfile() {
               </div>
               <div>
                 <p style={{ margin: "0 0 5px 0", color: "#64748b", fontSize: "0.85rem" }}>ความปลอดภัย</p>
-                <button onClick={() => setIsPasswordModalOpen(true)} style={{ margin: 0, padding: "5px 10px", backgroundColor: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", cursor: "pointer", fontSize: "0.85rem" }}>
+                <button
+                  onClick={() => setIsPasswordModalOpen(true)}
+                  style={{ margin: 0, padding: "5px 10px", backgroundColor: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", cursor: "pointer", fontSize: "0.85rem" }}
+                >
                   🔑 เปลี่ยนรหัสผ่าน
                 </button>
               </div>
             </div>
           </div>
 
-          {/* ประวัติการทำงาน */}
           <div style={{ backgroundColor: "white", padding: "25px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
             <h3 style={{ margin: "0 0 20px 0", color: "#1e293b", borderBottom: "2px solid #f1f5f9", paddingBottom: "10px" }}>⏱️ ประวัติการทำรายการล่าสุด</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
@@ -187,7 +213,9 @@ export default function AdminProfile() {
                   <div style={{ backgroundColor: "#fef2f2", color: "#800000", padding: "8px", borderRadius: "50%", fontSize: "0.8rem" }}>⚡</div>
                   <div>
                     <p style={{ margin: "0 0 5px 0", color: "#1e293b", fontWeight: "bold", fontSize: "0.95rem" }}>{log.action}</p>
-                    <p style={{ margin: 0, color: "#64748b", fontSize: "0.8rem" }}>{log.date} • {log.time}</p>
+                    <p style={{ margin: 0, color: "#64748b", fontSize: "0.8rem" }}>
+                      {log.date} • {log.time}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -196,9 +224,8 @@ export default function AdminProfile() {
         </div>
       </div>
 
-      {/* Modal แก้ไขข้อมูล */}
       {isEditModalOpen && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
           <div style={{ backgroundColor: "white", padding: "30px", borderRadius: "12px", width: "400px", boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}>
             <h3 style={{ margin: "0 0 20px 0", color: "#1e293b" }}>✏️ แก้ไขข้อมูลติดต่อ</h3>
             <div style={{ marginBottom: "15px" }}>
@@ -217,9 +244,8 @@ export default function AdminProfile() {
         </div>
       )}
 
-      {/* Modal ยืนยันการออกจากระบบ */}
       {isLogoutModalOpen && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
           <div style={{ backgroundColor: "white", padding: "30px", borderRadius: "12px", width: "350px", textAlign: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}>
             <div style={{ fontSize: "3rem", marginBottom: "15px" }}>🚪</div>
             <h3 style={{ margin: "0 0 10px 0", color: "#1e293b" }}>ยืนยันการออกจากระบบ</h3>
@@ -228,6 +254,21 @@ export default function AdminProfile() {
               <button onClick={() => setIsLogoutModalOpen(false)} style={{ flex: 1, padding: "10px 16px", border: "none", backgroundColor: "#f1f5f9", color: "#475569", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>ยกเลิก</button>
               <button onClick={confirmLogout} style={{ flex: 1, padding: "10px 16px", border: "none", backgroundColor: "#ef4444", color: "white", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>ออกจากระบบ</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isPasswordModalOpen && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
+          <div style={{ backgroundColor: "white", padding: "30px", borderRadius: "12px", width: "360px", textAlign: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ margin: "0 0 10px 0", color: "#1e293b" }}>🔐 เปลี่ยนรหัสผ่าน</h3>
+            <p style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "24px" }}>ส่วนนี้ยังไม่ได้เชื่อม API รีเซ็ตรหัสผ่าน</p>
+            <button
+              onClick={() => setIsPasswordModalOpen(false)}
+              style={{ width: "100%", padding: "10px 16px", border: "none", backgroundColor: "#800000", color: "white", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}
+            >
+              ปิด
+            </button>
           </div>
         </div>
       )}
