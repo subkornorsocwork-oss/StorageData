@@ -33,6 +33,15 @@ async function loadProfile(userId: string) {
   return data as UserProfile;
 }
 
+async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 10000): Promise<T> {
+  return await Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error("profile load timeout")), timeoutMs);
+    }),
+  ]);
+}
+
 export function RoleProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<"student" | "admin" | null>(null);
   const [fullName, setFullName] = useState("");
@@ -64,7 +73,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
         if (session?.user) {
           try {
-            const userProfile = await loadProfile(session.user.id);
+            const userProfile = await withTimeout(loadProfile(session.user.id), 10000);
             applyProfileState(userProfile);
           } catch (profileError) {
             console.error("bootstrap profile error:", profileError);
@@ -92,8 +101,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         }
 
         if (session?.user) {
-          if (isMounted) setLoading(true);
-          const userProfile = await loadProfile(session.user.id);
+          const userProfile = await withTimeout(loadProfile(session.user.id), 10000);
           applyProfileState(userProfile);
         } else {
           clearProfileState();
