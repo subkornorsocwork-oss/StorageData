@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
@@ -26,6 +26,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", session.user.id)
+        .maybeSingle();
+
+      router.replace(profile?.role === "admin" ? "/admin" : "/");
+    };
+
+    void checkExistingSession();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,9 +102,11 @@ export default function LoginPage() {
           );
 
           if (profileError) throw profileError;
+
+          router.replace("/");
         }
       } else {
-        const { error: loginError } = await withTimeout(
+        const { data: loginData, error: loginError } = await withTimeout(
           supabase.auth.signInWithPassword({
             email: fullEmail,
             password,
@@ -98,10 +120,19 @@ export default function LoginPage() {
           }
           throw loginError;
         }
-      }
 
-      router.push("/");
-      router.refresh();
+        const userId = loginData.session?.user.id;
+        if (userId) {
+          const { data: profile } = await withTimeout(
+            supabase.from("profiles").select("role").eq("id", userId).maybeSingle(),
+            15000,
+          );
+
+          router.replace(profile?.role === "admin" ? "/admin" : "/");
+        } else {
+          router.replace("/");
+        }
+      }
     } catch (error: unknown) {
       console.error(error);
       const err = error as Error;
