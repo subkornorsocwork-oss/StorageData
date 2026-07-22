@@ -26,7 +26,7 @@ const SEVERITY_OPTIONS: { value: ComplaintSeverity; label: string }[] = [
   { value: "low", label: "ไม่เร่งด่วน" },
 ];
 
-async function withTimeout<T>(promise: Promise<T>, timeoutMs = 15000): Promise<T> {
+async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 15000): Promise<T> {
   return await Promise.race([
     promise,
     new Promise<T>((_, reject) => {

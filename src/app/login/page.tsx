@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-async function withTimeout<T>(promise: Promise<T>, timeoutMs = 15000): Promise<T> {
+async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 15000): Promise<T> {
   return await Promise.race([
     promise,
     new Promise<T>((_, reject) => {
@@ -31,6 +31,14 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setErrorMsg("");
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+    if (!supabaseUrl || !supabaseAnonKey) {
+      setErrorMsg("ยังไม่ได้ตั้งค่า Supabase environment variables ให้ครบ โดยเฉพาะ NEXT_PUBLIC_SUPABASE_ANON_KEY");
+      setLoading(false);
+      return;
+    }
 
     const fullEmail = emailPrefix.includes("@")
       ? emailPrefix.trim()

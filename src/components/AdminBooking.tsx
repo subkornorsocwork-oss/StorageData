@@ -539,11 +539,11 @@ export default function AdminBooking() {
               )}
             </div>
 
-            <div style={{ flex: 1, minHeight: "420px", backgroundColor: "#f8fafc", padding: "20px" }}>
+            <div style={{ flex: 1, minHeight: "420px", backgroundColor: "#f8fafc", padding: "20px", overflow: "auto" }}>
               {documentModal.activeUrl ? (
                 isPreviewableImage(documentModal.activeUrl) ? (
-                  <div style={{ width: "100%", height: "100%", overflow: "auto", textAlign: "center" }}>
-                    <img src={documentModal.activeUrl} alt={documentModal.activeLabel} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }} />
+                  <div style={{ width: "100%", minHeight: "100%", overflow: "auto", textAlign: "center" }}>
+                    <img src={documentModal.activeUrl} alt={documentModal.activeLabel} style={{ width: "100%", height: "auto", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", display: "block" }} />
                   </div>
                 ) : isPreviewablePdf(documentModal.activeUrl) ? (
                   <iframe title={documentModal.activeLabel} src={documentModal.activeUrl} style={{ width: "100%", height: "100%", minHeight: "420px", border: "none", borderRadius: "12px", backgroundColor: "white" }} />
