@@ -3,6 +3,8 @@
 
 import { supabase } from "@/lib/supabase";
 
+const LAF_BUCKET = "images";
+
 // ─────────────────────────────────────────
 // COMPLAINTS
 // ─────────────────────────────────────────
@@ -167,11 +169,11 @@ export async function createLafPost(params: {
     const ext = params.image_file.name.split(".").pop();
     const fileName = `${Date.now()}.${ext}`;
     const { error: uploadError } = await supabase.storage
-      .from("laf-images")
+      .from(LAF_BUCKET)
       .upload(fileName, params.image_file);
     if (uploadError) throw uploadError;
     const { data } = supabase.storage
-      .from("laf-images")
+      .from(LAF_BUCKET)
       .getPublicUrl(fileName);
     image_url = data.publicUrl;
   }

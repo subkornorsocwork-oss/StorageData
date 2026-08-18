@@ -3,6 +3,17 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
+const LAF_BUCKET = "images";
+
+async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 15000): Promise<T> {
+  return await Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error("คำขอใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง")), timeoutMs);
+    }),
+  ]);
+}
+
 interface LostFoundItem {
   id: number;
   user_id: string;
@@ -44,10 +55,13 @@ export default function LostAndFoundPage() {
   const fetchItems = async () => {
     try {
       setLoadingItems(true);
-      const { data, error } = await supabase
-        .from('lost_and_found')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await withTimeout(
+        supabase
+          .from("lost_and_found")
+          .select("*")
+          .order("created_at", { ascending: false }),
+        12000,
+      );
 
       if (error) throw error;
       if (data) setItems(data);
@@ -87,15 +101,18 @@ export default function LostAndFoundPage() {
     const fileName = `${userId}_${Date.now()}.${fileExt}`;
     const filePath = `lost-and-found/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('images') // ✅ ชื่อ bucket ใน Supabase Storage (สร้างก่อนถ้ายังไม่มี)
-      .upload(filePath, file, { upsert: false });
+    const { error: uploadError } = await withTimeout(
+      supabase.storage
+        .from(LAF_BUCKET)
+        .upload(filePath, file, { upsert: false }),
+      20000,
+    );
 
     if (uploadError) throw uploadError;
 
     // ดึง Public URL
     const { data } = supabase.storage
-      .from('images')
+      .from(LAF_BUCKET)
       .getPublicUrl(filePath);
 
     return data.publicUrl;
@@ -112,7 +129,7 @@ export default function LostAndFoundPage() {
     setModalState({ isOpen: true, status: "loading", title: "กำลังบันทึกข้อมูล...", message: "ระบบกำลังนำประกาศของคุณขึ้นกระดาน" });
 
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await withTimeout(supabase.auth.getUser(), 10000);
       if (authError || !user) throw new Error("ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบก่อนครับ");
 
       // ✅ อัปโหลดรูปก่อน (ถ้ามี)
@@ -122,9 +139,10 @@ export default function LostAndFoundPage() {
         imageUrl = await uploadImage(imageFile, user.id);
       }
 
-      const { error: insertError } = await supabase
-        .from('lost_and_found')
-        .insert({
+      const { error: insertError } = await withTimeout(
+        supabase
+          .from("lost_and_found")
+          .insert({
           user_id: user.id,
           post_type: reportType,
           item_name: itemName,
@@ -135,7 +153,9 @@ export default function LostAndFoundPage() {
           contact: contact,
           is_resolved: false,
           image_url: imageUrl, // ✅ บันทึก URL รูปภาพ
-        });
+          }),
+        12000,
+      );
 
       if (insertError) throw insertError;
 

@@ -22,6 +22,8 @@ const RoleContext = createContext<{
   loading: boolean;
 } | undefined>(undefined);
 
+const PROFILE_CACHE_KEY = "student-system:profile";
+
 async function loadProfile(userId: string) {
   const { data, error } = await supabase
     .from("profiles")
@@ -31,6 +33,38 @@ async function loadProfile(userId: string) {
 
   if (error) throw error;
   return data as UserProfile;
+}
+
+function readCachedProfile(userId: string): UserProfile | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(PROFILE_CACHE_KEY);
+    if (!raw) return null;
+
+    const cached = JSON.parse(raw) as UserProfile;
+    return cached.id === userId ? cached : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedProfile(profile: UserProfile) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile));
+  } catch {
+    // ignore cache write failures
+  }
+}
+
+function clearCachedProfile() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(PROFILE_CACHE_KEY);
+  } catch {
+    // ignore cache clear failures
+  }
 }
 
 async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 10000): Promise<T> {
@@ -58,11 +92,12 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       setProfile(null);
     };
 
-    const applyProfileState = (data: UserProfile) => {
+    const applyProfileState = (data: UserProfile, persist = true) => {
       if (!isMounted) return;
       setRole(data.role);
       setFullName(data.full_name);
       setProfile(data);
+      if (persist) writeCachedProfile(data);
     };
 
     const bootstrap = async () => {
@@ -72,15 +107,23 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         } = await supabase.auth.getSession();
 
         if (session?.user) {
+          const cachedProfile = readCachedProfile(session.user.id);
+          if (cachedProfile) {
+            applyProfileState(cachedProfile, false);
+          }
+
           try {
             const userProfile = await withTimeout(loadProfile(session.user.id), 10000);
             applyProfileState(userProfile);
           } catch (profileError) {
             console.error("bootstrap profile error:", profileError);
-            clearProfileState();
+            if (!cachedProfile) {
+              clearProfileState();
+            }
           }
         } else {
           clearProfileState();
+          clearCachedProfile();
         }
       } catch (sessionError) {
         console.error("bootstrap session error:", sessionError);
@@ -96,19 +139,28 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       try {
         if (event === "SIGNED_OUT") {
           clearProfileState();
+          clearCachedProfile();
           if (isMounted) setLoading(false);
           return;
         }
 
         if (session?.user) {
+          const cachedProfile = readCachedProfile(session.user.id);
+          if (cachedProfile) {
+            applyProfileState(cachedProfile, false);
+          }
+
           const userProfile = await withTimeout(loadProfile(session.user.id), 10000);
           applyProfileState(userProfile);
         } else {
           clearProfileState();
+          clearCachedProfile();
         }
       } catch (profileError) {
         console.error("auth state profile error:", profileError);
-        clearProfileState();
+        if (!profileError || !session?.user || !readCachedProfile(session.user.id)) {
+          clearProfileState();
+        }
       } finally {
         if (isMounted) setLoading(false);
       }

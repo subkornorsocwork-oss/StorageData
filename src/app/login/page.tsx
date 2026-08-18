@@ -256,7 +256,7 @@ export default function LoginPage() {
       </div>
 
       <style>{`
-        @media (max-width: 900px) {
+        @media (max-width: 1280px) {
           .login-shell {
             flex-direction: column;
             align-items: center;
@@ -265,27 +265,29 @@ export default function LoginPage() {
 
           .login-brand {
             flex: none;
-            width: min(100% - 32px, 560px);
-            min-height: 180px;
-            padding: 24px 22px;
+            width: min(100% - 32px, 620px);
+            min-height: 210px;
+            padding: 28px 22px;
             justify-content: center;
             border-radius: 24px;
             box-sizing: border-box;
           }
 
           .login-brand h1 {
-            font-size: clamp(1.8rem, 8vw, 2.4rem) !important;
+            font-size: clamp(2rem, 7vw, 2.8rem) !important;
             margin-bottom: 12px !important;
+            line-height: 1.05 !important;
           }
 
           .login-brand p {
-            font-size: 0.98rem !important;
+            font-size: 1rem !important;
+            line-height: 1.6 !important;
             max-width: 100% !important;
           }
 
           .login-form-wrap {
             flex: none;
-            width: min(100% - 32px, 560px);
+            width: min(100% - 32px, 620px);
             padding: 14px 0 0;
             align-items: stretch;
             box-sizing: border-box;
@@ -293,7 +295,7 @@ export default function LoginPage() {
 
           .login-card {
             max-width: none !important;
-            padding: 26px 18px !important;
+            padding: 28px 20px !important;
             border-radius: 22px !important;
             width: 100% !important;
             box-sizing: border-box;
@@ -302,13 +304,13 @@ export default function LoginPage() {
 
         @media (max-width: 480px) {
           .login-brand {
-            width: calc(100% - 24px);
-            min-height: 170px;
-            padding: 22px 18px;
+            width: calc(100% - 20px);
+            min-height: 180px;
+            padding: 22px 16px;
           }
 
           .login-card {
-            padding: 24px 16px !important;
+            padding: 22px 14px !important;
           }
 
           .login-card input,
