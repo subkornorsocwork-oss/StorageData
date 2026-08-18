@@ -48,6 +48,10 @@ const fmtDate = (d: string) => {
   return `${Number(day)} ${THAI_MONTHS_SHORT[Number(m) - 1]} ${Number(y) + 543}`;
 };
 const fmtTime = (t: string) => t.slice(0, 5);
+const fmtDateTime = (d: string) => {
+  const dt = new Date(d);
+  return `${dt.getDate()} ${THAI_MONTHS_SHORT[dt.getMonth()]} ${dt.getFullYear() + 543} ${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
+};
 
 const parseBookingDocuments = (raw: string | null): BookingDocuments | null => {
   if (!raw) return null;
@@ -85,7 +89,7 @@ export default function AdminBooking() {
   const [activeTab, setActiveTab] = useState<"requests" | "calendar" | "rooms">("requests");
 
   // ── แท็บ 1: คำขอจอง ──
-  const [bookings, setBookings] = useState<BookingRow[]>([]);
+  const [allBookings, setAllBookings] = useState<BookingRow[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "approved" | "rejected">("pending");
   const [search, setSearch] = useState("");
@@ -125,12 +129,16 @@ export default function AdminBooking() {
 
   const loadBookings = useCallback(async () => {
     setLoadingBookings(true);
-    let q = supabase.from("v_bookings_detail").select("*").order("created_at", { ascending: false });
-    if (filterStatus !== "all") q = q.eq("status", filterStatus);
-    const { data } = await q;
-    setBookings(data ?? []);
+    const { data, error } = await supabase.from("v_bookings_detail").select("*").order("created_at", { ascending: false });
+    if (error) {
+      console.error("loadBookings error:", error);
+      setAllBookings([]);
+      setLoadingBookings(false);
+      return;
+    }
+    setAllBookings((data ?? []) as BookingRow[]);
     setLoadingBookings(false);
-  }, [filterStatus]);
+  }, []);
 
   useEffect(() => {
     void loadBookings();
@@ -152,15 +160,16 @@ export default function AdminBooking() {
   // ─── Filter bookings ────────────────────────────────────────
 
   const filteredBookings = useMemo(() => {
-    if (!search) return bookings;
+    const scoped = filterStatus === "all" ? allBookings : allBookings.filter(b => b.status === filterStatus);
+    if (!search) return scoped;
     const q = search.toLowerCase();
-    return bookings.filter(b =>
+    return scoped.filter(b =>
       b.user_name?.toLowerCase().includes(q) ||
       b.student_id?.toLowerCase().includes(q) ||
       b.location_name?.toLowerCase().includes(q) ||
       b.org_name?.toLowerCase().includes(q)
     );
-  }, [bookings, search]);
+  }, [allBookings, filterStatus, search]);
 
   // ─── Approve ────────────────────────────────────────────────
 
@@ -249,7 +258,7 @@ export default function AdminBooking() {
     setCalMonth(m); setCalYear(y);
   };
 
-  const approvedBookings = bookings.filter(b => b.status === "approved");
+  const approvedBookings = allBookings.filter(b => b.status === "approved");
 
   const openDocumentModal = (booking: BookingRow) => {
     const documents = parseBookingDocuments(booking.document_url);
@@ -292,9 +301,9 @@ export default function AdminBooking() {
               transition: "all 0.2s", fontSize: "0.9rem",
             }}>
               {tab.label}
-              {tab.key === "requests" && bookings.filter(b => b.status === "pending").length > 0 && (
+              {tab.key === "requests" && allBookings.filter(b => b.status === "pending").length > 0 && (
                 <span style={{ marginLeft: "6px", backgroundColor: "#800000", color: "white", borderRadius: "999px", padding: "1px 7px", fontSize: "0.75rem" }}>
-                  {bookings.filter(b => b.status === "pending").length}
+                  {allBookings.filter(b => b.status === "pending").length}
                 </span>
               )}
             </button>
@@ -338,7 +347,7 @@ export default function AdminBooking() {
                   <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "750px" }}>
                     <thead>
                       <tr style={{ backgroundColor: "#f8fafc", borderBottom: "2px solid #800000" }}>
-                        {["วันที่/เวลา","สถานที่","ผู้จอง","เอกสาร","สถานะ","จัดการ"].map(h => (
+                        {["วันที่/เวลา","ยื่นเมื่อ","สถานที่","ผู้จอง","เอกสาร","สถานะ","จัดการ"].map(h => (
                           <th key={h} style={{ padding: "14px 16px", textAlign: "left", fontSize: "0.83rem", fontWeight: 700, color: "#64748b" }}>{h}</th>
                         ))}
                       </tr>
@@ -352,6 +361,7 @@ export default function AdminBooking() {
                               <div style={{ fontWeight: 700, fontSize: "0.875rem", color: "#1e293b" }}>{fmtDate(b.booking_date)}</div>
                               <div style={{ fontSize: "0.8rem", color: "#64748b" }}>{fmtTime(b.start_time)} – {fmtTime(b.end_time)}</div>
                             </td>
+                            <td style={{ padding: "14px 16px", fontSize: "0.82rem", color: "#475569" }}>{fmtDateTime(b.created_at)}</td>
                             <td style={{ padding: "14px 16px", fontWeight: 700, color: "#800000", fontSize: "0.875rem" }}>{b.location_name}</td>
                             <td style={{ padding: "14px 16px" }}>
                               <div style={{ fontWeight: 600, fontSize: "0.875rem" }}>{b.user_name}</div>
@@ -425,6 +435,7 @@ export default function AdminBooking() {
                       {dayBookings.map(b => (
                         <div key={b.id} style={{ backgroundColor: "#800000", color: "white", fontSize: "0.68rem", padding: "3px 6px", borderRadius: "4px", lineHeight: "1.3" }}>
                           <strong>{fmtTime(b.start_time)}</strong> {b.location_name}
+                          <div style={{ fontSize: "0.63rem", opacity: 0.9 }}>ยื่นเมื่อ {fmtDateTime(b.created_at)}</div>
                         </div>
                       ))}
                     </div>
@@ -594,6 +605,7 @@ export default function AdminBooking() {
               <div><b>ผู้จอง:</b> {actionModal.booking.user_name} ({actionModal.booking.student_id})</div>
               <div><b>สถานที่:</b> {actionModal.booking.location_name}</div>
               <div><b>วันที่:</b> {fmtDate(actionModal.booking.booking_date)}</div>
+              <div><b>ยื่นคำขอเมื่อ:</b> {fmtDateTime(actionModal.booking.created_at)}</div>
               <div><b>เวลา:</b> {fmtTime(actionModal.booking.start_time)} – {fmtTime(actionModal.booking.end_time)}</div>
               <div><b>วัตถุประสงค์:</b> {actionModal.booking.purpose ?? "-"}</div>
             </div>

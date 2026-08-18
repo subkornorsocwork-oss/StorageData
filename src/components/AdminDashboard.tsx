@@ -16,6 +16,9 @@ export default function AdminDashboard() {
   const [userStats, setUserStats] = useState<any[]>([]);
   const [facultyStats, setFacultyStats] = useState<any[]>([]);
   const [itemStats, setItemStats] = useState<any[]>([]);
+  const [topBookers, setTopBookers] = useState<any[]>([]);
+  const [topOrganizations, setTopOrganizations] = useState<any[]>([]);
+  const [bookingStatusStats, setBookingStatusStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchDashboardData = async () => {
@@ -53,11 +56,53 @@ export default function AdminDashboard() {
 
       const { data: bookingsData, error: e5 } = await supabase
         .from("bookings")
-        .select(`id, created_at, location, profiles ( full_name )`)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(5);
+        .select(`id, created_at, status, location, org_name, user_id, profiles ( full_name, faculty )`)
+        .order("created_at", { ascending: false });
       if (e5) console.error("❌ bookings list:", e5.message);
+      if (bookingsData) {
+        const pendingRows = bookingsData.filter((b: any) => b.status === "pending").slice(0, 5);
+        setPendingList(pendingRows);
+
+        const statusCounts: Record<string, number> = {};
+        const userCounts: Record<string, number> = {};
+        const orgCounts: Record<string, number> = {};
+        const facultyCounts: Record<string, number> = {};
+
+        bookingsData.forEach((b: any) => {
+          statusCounts[b.status ?? "unknown"] = (statusCounts[b.status ?? "unknown"] || 0) + 1;
+          const userName = b.profiles?.full_name || "ไม่ระบุชื่อ";
+          userCounts[userName] = (userCounts[userName] || 0) + 1;
+          if (b.org_name) {
+            orgCounts[b.org_name] = (orgCounts[b.org_name] || 0) + 1;
+          }
+          if (b.profiles?.faculty) {
+            facultyCounts[b.profiles.faculty] = (facultyCounts[b.profiles.faculty] || 0) + 1;
+          }
+        });
+
+        setBookingStatusStats(
+          Object.entries(statusCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, value]) => ({ name, value }))
+        );
+        setTopBookers(
+          Object.entries(userCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([name, value]) => ({ name, value }))
+        );
+        setTopOrganizations(
+          Object.entries(orgCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([name, value]) => ({ name, value }))
+        );
+        setFacultyStats(
+          Object.entries(facultyCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, value]) => ({ name, value }))
+        );
+      }
 
       const { data: profilesData, error: e6 } = await supabase
         .from("profiles")
@@ -72,22 +117,10 @@ export default function AdminDashboard() {
         setUserStats(Object.entries(roleCounts).map(([name, value]) => ({ name, value })));
       }
 
-      const { data: facultyData, error: e7 } = await supabase
-        .from("profiles")
-        .select("faculty");
-      if (e7) console.error("❌ profiles faculty:", e7.message);
-      if (facultyData) {
-        const counts: Record<string, number> = {};
-        facultyData.forEach(p => {
-          if (p.faculty) counts[p.faculty] = (counts[p.faculty] || 0) + 1;
-        });
-        setFacultyStats(Object.entries(counts).map(([name, value]) => ({ name, value })));
-      }
-
-      const { data: borrowItemsData, error: e8 } = await supabase
+      const { data: borrowItemsData, error: e7 } = await supabase
         .from("borrow_items")
         .select(`quantity, equipment ( name )`);
-      if (e8) console.error("❌ borrow_items:", e8.message);
+      if (e7) console.error("❌ borrow_items:", e7.message);
       if (borrowItemsData) {
         const counts: Record<string, number> = {};
         borrowItemsData.forEach((b: any) => {
@@ -108,8 +141,6 @@ export default function AdminDashboard() {
         totalUsers: userCount || 0,
         lostItems: lostCount || 0
       });
-
-      if (bookingsData) setPendingList(bookingsData);
 
     } catch (error) {
       console.error("❌ Dashboard fetch error:", error);
@@ -201,9 +232,38 @@ export default function AdminDashboard() {
 
       <h2 style={{ color: "#1e293b", marginBottom: "20px" }}>📈 สถิติการใช้งานระบบ</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px", marginBottom: "40px" }}>
+        <CustomPieChart data={bookingStatusStats} title="สถานะการจองทั้งหมด" />
         <CustomPieChart data={userStats} title="สัดส่วนยอดผู้ใช้" />
         <CustomPieChart data={facultyStats} title="คณะที่มาใช้บริการ" />
         <CustomPieChart data={itemStats} title="พัสดุที่ถูกยืมมากที่สุด" />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px", marginBottom: "40px" }}>
+        <div style={{ backgroundColor: "white", padding: "24px", borderRadius: "20px", boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
+          <h3 style={{ marginTop: 0, color: "#1e293b" }}>🏆 ผู้จองมากที่สุด</h3>
+          {topBookers.length === 0 ? (
+            <p style={{ color: "#94a3b8" }}>ไม่มีข้อมูล</p>
+          ) : (
+            <ol style={{ margin: 0, paddingLeft: "20px", color: "#334155" }}>
+              {topBookers.map((item) => (
+                <li key={item.name} style={{ marginBottom: "8px" }}>{item.name} - {item.value} ครั้ง</li>
+              ))}
+            </ol>
+          )}
+        </div>
+
+        <div style={{ backgroundColor: "white", padding: "24px", borderRadius: "20px", boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
+          <h3 style={{ marginTop: 0, color: "#1e293b" }}>🏢 องค์กรที่มีส่วนร่วมมากที่สุด</h3>
+          {topOrganizations.length === 0 ? (
+            <p style={{ color: "#94a3b8" }}>ไม่มีข้อมูล</p>
+          ) : (
+            <ol style={{ margin: 0, paddingLeft: "20px", color: "#334155" }}>
+              {topOrganizations.map((item) => (
+                <li key={item.name} style={{ marginBottom: "8px" }}>{item.name} - {item.value} ครั้ง</li>
+              ))}
+            </ol>
+          )}
+        </div>
       </div>
 
       <div style={{ backgroundColor: "white", padding: "30px", borderRadius: "20px", boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>

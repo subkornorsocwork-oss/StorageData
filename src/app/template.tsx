@@ -52,7 +52,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
 if (showAdminSpinner) {
   return (
     <div style={{
-      display: "flex", height: "100vh",
+      display: "flex", height: "100dvh",
       alignItems: "center", justifyContent: "center",
       backgroundColor: "#1a1a2e"
     }}>
@@ -69,7 +69,7 @@ if (showAdminSpinner) {
   // Skeleton — แสดงเฉพาะหน้า student ตอน loading ครั้งแรก
   if (loading && !isLoginPage && !isAdminPage) {
     return (
-      <div style={{ display: "flex", height: "100vh", backgroundColor: "#f8fafc", overflow: "hidden" }}>
+      <div style={{ display: "flex", height: "100dvh", backgroundColor: "#f8fafc", overflow: "hidden" }}>
         <style dangerouslySetInnerHTML={{
           __html: `
             @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
@@ -108,9 +108,9 @@ if (showAdminSpinner) {
   }
 
   return (
-    <div className="app-container">
+      <div className="app-container">
       <style dangerouslySetInnerHTML={{ __html: `
-        .app-container { display: flex; height: 100vh; overflow: hidden; background-color: #f8fafc; }
+        .app-container { display: flex; height: 100dvh; overflow: hidden; background-color: #f8fafc; }
         .content-wrapper { flex: 1; display: flex; flex-direction: column; overflow-y: auto; scroll-behavior: smooth; min-width: 0; }
         .main-content { animation: fadeIn 0.4s ease-in-out; flex: 1; }
         @media (max-width: 768px) { .app-container { flex-direction: column; } .main-content { padding: 15px !important; } }

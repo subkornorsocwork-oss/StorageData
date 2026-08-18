@@ -4,7 +4,15 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 
 interface Location { id: number; name: string; capacity: number | null; }
-interface BookingSlot { start_time: string; end_time: string; purpose: string | null; location_id: number; booking_date: string; }
+interface BookingSlot {
+  start_time: string;
+  end_time: string;
+  purpose: string | null;
+  location_id: number;
+  booking_date: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+}
 interface ModalState { isOpen: boolean; status: "loading"|"success"|"error"; title: string; message: string; }
 
 // ✅ ข้อมูลแต่ละวันที่จอง
@@ -63,6 +71,7 @@ export default function StudentBooking() {
   // ✅ หลายวัน แทน selectedDay เดียว
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [dayBookings,   setDayBookings]   = useState<DayBooking[]>([]);
+  const [viewDate, setViewDate] = useState<string | null>(null);
 
   // ข้อมูลร่วมทุกวัน
   const [purpose,     setPurpose]     = useState("");
@@ -83,10 +92,10 @@ export default function StudentBooking() {
     const from = `${year}-${String(month+1).padStart(2,"0")}-01`;
     const to   = `${year}-${String(month+1).padStart(2,"0")}-${lastDay}`;
     const { data } = await supabase
-      .from("bookings").select("start_time,end_time,purpose,location_id,booking_date")
+      .from("bookings").select("start_time,end_time,purpose,location_id,booking_date,status,created_at")
       .in("status",["approved","pending"]).gte("booking_date",from).lte("booking_date",to);
     setSlots(data ?? []);
-    setBookedDays(new Set((data ?? []).map(b => Number(b.booking_date.split("-")[2]))));
+    setBookedDays(new Set((data ?? []).filter(b => b.status === "approved").map(b => Number(b.booking_date.split("-")[2]))));
   }, []);
 
   useEffect(() => { loadMonthBookings(currentYear, currentMonth); }, [currentYear, currentMonth, loadMonthBookings]);
@@ -110,14 +119,18 @@ export default function StudentBooking() {
       if (prev.includes(dateStr)) {
         // ลบออก
         setDayBookings(db => db.filter(x => x.date !== dateStr));
-        return prev.filter(x => x !== dateStr);
+        const next = prev.filter(x => x !== dateStr);
+        setViewDate(next[0] ?? null);
+        return next;
       } else {
         // เพิ่ม (ตรวจสอบป้องกันข้อมูลซ้ำ)
         setDayBookings(db => {
           if (db.some(x => x.date === dateStr)) return db;
           return [...db, { date: dateStr, locationId: "", startTime: "", endTime: "", attendees: "" }];
         });
-        return [...prev, dateStr].sort();
+        const next = [...prev, dateStr].sort();
+        setViewDate(dateStr);
+        return next;
       }
     });
   };
@@ -126,6 +139,15 @@ export default function StudentBooking() {
   const updateDayBooking = (date: string, field: keyof DayBooking, value: any) => {
     setDayBookings(prev => prev.map(d => d.date === date ? { ...d, [field]: value } : d));
   };
+
+  const activeViewDate = viewDate ?? selectedDates[0] ?? null;
+  const approvedBookingsForView = useMemo(
+    () => activeViewDate
+      ? slots.filter(slot => slot.status === "approved" && slot.booking_date === activeViewDate)
+          .sort((a, b) => a.start_time.localeCompare(b.start_time))
+      : [],
+    [activeViewDate, slots],
+  );
 
   const uploadOneFile = async (file: File, userId: string, prefix: string): Promise<string> => {
     const ext  = file.name.split(".").pop();
@@ -297,16 +319,21 @@ export default function StudentBooking() {
 
             {/* คิวการใช้งาน */}
             <div style={{ backgroundColor:"white", padding:"20px 25px", borderRadius:"20px", borderLeft:"4px solid #800000" }}>
-              <h4 style={{ margin:"0 0 12px", color:"#1e293b", fontSize:"0.95rem" }}>📅 การจองในเดือนนี้</h4>
-              {slots.length > 0 ? (
+              <h4 style={{ margin:"0 0 12px", color:"#1e293b", fontSize:"0.95rem" }}>📅 กิจกรรมที่อนุมัติแล้วของวันที่เลือก</h4>
+              {!activeViewDate ? (
+                <div style={{ padding:"12px", textAlign:"center", backgroundColor:"#f8fafc", color:"#64748b", borderRadius:"10px", fontWeight:600, fontSize:"0.85rem" }}>
+                  คลิกวันในปฏิทินเพื่อดูรายการกิจกรรม
+                </div>
+              ) : approvedBookingsForView.length > 0 ? (
                 <div style={{ display:"flex", flexDirection:"column", gap:"8px", maxHeight:"200px", overflowY:"auto" }}>
-                  {slots.map((bk,i) => {
+                  <div style={{ fontSize:"0.8rem", color:"#64748b", marginBottom:"4px" }}>{thaiDate(activeViewDate)}</div>
+                  {approvedBookingsForView.map((bk,i) => {
                     const loc = locations.find(l => l.id === bk.location_id);
                     return (
                       <div key={`slot-${i}`} style={{ padding:"10px 12px", backgroundColor:"#f8fafc", borderRadius:"10px", border:"1px solid #e2e8f0", fontSize:"0.82rem" }}>
-                        <div style={{ display:"flex", justifyContent:"space-between" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", gap:"10px" }}>
                           <span style={{ fontWeight:"bold", color:"#800000" }}>{fmtTime(bk.start_time)} – {fmtTime(bk.end_time)}</span>
-                          <span style={{ color:"#64748b" }}>{thaiDate(bk.booking_date)}</span>
+                          <span style={{ color:"#64748b" }}>ยื่นเมื่อ {new Date(bk.created_at).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" })}</span>
                         </div>
                         <div style={{ color:"#475569", marginTop:"2px" }}>{loc?.name ?? "-"} • {bk.purpose}</div>
                       </div>
@@ -315,7 +342,7 @@ export default function StudentBooking() {
                 </div>
               ) : (
                 <div style={{ padding:"12px", textAlign:"center", backgroundColor:"#f0fdf4", color:"#16a34a", borderRadius:"10px", fontWeight:600, fontSize:"0.85rem" }}>
-                  ✨ เดือนนี้ยังไม่มีการจอง
+                  วันนี้ยังไม่มีกิจกรรมที่อนุมัติแล้ว
                 </div>
               )}
             </div>

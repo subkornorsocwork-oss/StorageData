@@ -83,7 +83,6 @@ export default function AdminBorrow() {
   const [loadingReq, setLoadingReq]     = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchTerm, setSearchTerm]     = useState("");
-  const [scanInput, setScanInput]       = useState("");
 
   const [actionModal, setActionModal] = useState<{
     isOpen: boolean; type: "approve"|"reject"|"return"|null;
@@ -285,18 +284,6 @@ export default function AdminBorrow() {
     }
   };
 
-  const handleScan = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== "Enter") return;
-    const code = scanInput.trim();
-    if (!code) return;
-    const eq = equipments.find(e => e.barcode === code);
-    if (!eq) { alert(`❌ ไม่พบอุปกรณ์บาร์โค้ด: ${code}`); setScanInput(""); return; }
-    const active = requests.find(r => r.status === "borrowing" && r.borrow_items?.some(i => i.equipment?.name === eq.name));
-    if (active) { setActionModal({ isOpen: true, type: "return", req: active, note: "" }); }
-    else { alert(`⚠️ "${eq.name}" ไม่มีรายการยืมค้างอยู่`); }
-    setScanInput("");
-  };
-
   const handleSaveEq = async () => {
     if (!eqForm.name.trim() || eqForm.total_qty < 1)
       return setModal({ isOpen: true, status: "error", title: "ข้อมูลไม่ครบ", message: "กรุณากรอกชื่อและจำนวน" });
@@ -348,17 +335,6 @@ export default function AdminBorrow() {
   return (
     <div style={{ padding:"40px", maxWidth:"1200px", margin:"0 auto" }}>
       <h1 style={{ color:"#800000", marginBottom:"20px" }}>📦 ระบบจัดการยืม-คืนพัสดุและอุปกรณ์</h1>
-
-      <div style={{ backgroundColor:"#fff0f2", border:"2px dashed #800000", padding:"15px 20px", borderRadius:"12px", marginBottom:"25px", display:"flex", alignItems:"center", gap:"15px" }}>
-        <span style={{ fontSize:"1.5rem" }}>📷</span>
-        <div style={{ flex:1 }}>
-          <h4 style={{ margin:0, color:"#800000" }}>สแกนบาร์โค้ดเพื่อรับคืนด่วน</h4>
-          <p style={{ margin:"4px 0 0", fontSize:"0.85rem", color:"#64748b" }}>คลิกที่ช่องแล้วสแกนบาร์โค้ด</p>
-        </div>
-        <input type="text" placeholder="||||| สแกนบาร์โค้ด..." value={scanInput}
-          onChange={e => setScanInput(e.target.value)} onKeyDown={handleScan}
-          style={{ padding:"12px 20px", borderRadius:"8px", border:"2px solid #800000", width:"280px", fontSize:"1rem", fontWeight:"bold", textAlign:"center" }} />
-      </div>
 
       <div style={{ display:"flex", gap:"10px", marginBottom:"24px", borderBottom:"2px solid #e2e8f0" }}>
         {([
