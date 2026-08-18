@@ -259,44 +259,52 @@ export default function LoginPage() {
         @media (max-width: 900px) {
           .login-shell {
             flex-direction: column;
+            align-items: center;
+            padding: 16px 0 24px;
           }
 
           .login-brand {
             flex: none;
-            width: 100%;
-            min-height: 220px;
-            padding: 28px 22px;
-            justify-content: flex-end;
+            width: min(100% - 32px, 560px);
+            min-height: 180px;
+            padding: 24px 22px;
+            justify-content: center;
+            border-radius: 24px;
+            box-sizing: border-box;
           }
 
           .login-brand h1 {
-            font-size: clamp(1.8rem, 9vw, 2.6rem) !important;
-            margin-bottom: 14px !important;
+            font-size: clamp(1.8rem, 8vw, 2.4rem) !important;
+            margin-bottom: 12px !important;
           }
 
           .login-brand p {
-            font-size: 1rem !important;
+            font-size: 0.98rem !important;
             max-width: 100% !important;
           }
 
           .login-form-wrap {
             flex: none;
-            width: 100%;
-            padding: 16px 14px 28px;
+            width: min(100% - 32px, 560px);
+            padding: 14px 0 0;
             align-items: stretch;
+            box-sizing: border-box;
           }
 
           .login-card {
             max-width: none !important;
-            padding: 28px 18px !important;
+            padding: 26px 18px !important;
             border-radius: 22px !important;
+            width: 100% !important;
+            box-sizing: border-box;
           }
         }
 
         @media (max-width: 480px) {
           .login-brand {
-            min-height: 240px;
-            padding: 24px 18px;
+            width: calc(100% - 24px);
+            min-height: 170px;
+            padding: 22px 18px;
           }
 
           .login-card {
