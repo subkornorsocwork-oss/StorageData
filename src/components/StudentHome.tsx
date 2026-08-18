@@ -143,7 +143,9 @@ export default function StudentHome() {
         <div
           style={{
             width: "100%",
-            height: "320px",
+            aspectRatio: "16 / 6",
+            maxHeight: "320px",
+            minHeight: "180px",
             backgroundColor: "#0f172a",
             borderRadius: "16px",
             overflow: "hidden",
@@ -173,7 +175,7 @@ export default function StudentHome() {
                   style={{
                     width: "100%",
                     height: "100%",
-                    objectFit: "contain",
+                    objectFit: "cover",
                     objectPosition: "center",
                     display: "block",
                   }}

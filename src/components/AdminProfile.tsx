@@ -80,7 +80,7 @@ export default function AdminProfile() {
     }
   };
 
-  if (roleLoading) {
+  if (roleLoading && !profile) {
     return <div style={{ textAlign: "center", padding: "50px", color: "#64748b" }}>กำลังเชื่อมต่อฐานข้อมูล...</div>;
   }
 

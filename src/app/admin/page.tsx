@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AdminDashboard from "@/components/AdminDashboard";
 import AdminBooking from "@/components/AdminBooking";
 import AdminBorrow from "@/components/AdminBorrow";
@@ -25,8 +25,18 @@ const MENU: { key: AdminTab; icon: string; label: string }[] = [
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { fullName } = useRole();
+
+  useEffect(() => {
+    const syncSidebar = () => {
+      setSidebarOpen(window.innerWidth >= 1024);
+    };
+
+    syncSidebar();
+    window.addEventListener("resize", syncSidebar);
+    return () => window.removeEventListener("resize", syncSidebar);
+  }, []);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -42,7 +52,7 @@ export default function AdminPage() {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", backgroundColor: "#f1f5f9" }}>
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#f1f5f9", overflowX: "hidden" }}>
 
       {/* Sidebar */}
       <aside style={{
@@ -107,7 +117,7 @@ export default function AdminPage() {
       </aside>
 
       {/* Content */}
-      <main style={{ flex: 1, overflowY: "auto" }}>
+      <main style={{ flex: 1, minWidth: 0, overflowY: "auto" }}>
         {renderContent()}
       </main>
     </div>

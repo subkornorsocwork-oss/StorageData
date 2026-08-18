@@ -51,8 +51,8 @@ export default function AdminAnnouncements() {
   const [newPinned, setNewPinned] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [bannerFiles, setBannerFiles] = useState<File[]>([]);
+  const [bannerPreviews, setBannerPreviews] = useState<string[]>([]);
   const [uploadingBanner, setUploadingBanner] = useState(false);
 
   const [modal, setModal] = useState<ModalState>({ isOpen: false, status: "loading", title: "", message: "" });
@@ -64,6 +64,12 @@ export default function AdminAnnouncements() {
     setNewDate("");
     setNewPinned(false);
   };
+
+  useEffect(() => {
+    return () => {
+      bannerPreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    };
+  }, [bannerPreviews]);
 
   const loadAnnouncements = useCallback(async (type: "announcement" | "event") => {
     setLoading(true);
@@ -210,49 +216,55 @@ export default function AdminAnnouncements() {
   };
 
   const handleBannerSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      setModal({ isOpen: true, status: "error", title: "ไฟล์ใหญ่เกินไป", message: "ขนาดไฟล์ต้องไม่เกิน 5MB" });
+    const oversized = files.find((file) => file.size > 5 * 1024 * 1024);
+    if (oversized) {
+      setModal({ isOpen: true, status: "error", title: "ไฟล์ใหญ่เกินไป", message: "ขนาดไฟล์ต้องไม่เกิน 5MB ต่อรูป" });
       return;
     }
 
-    setBannerFile(file);
-    setBannerPreview(URL.createObjectURL(file));
+    bannerPreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    setBannerFiles(files);
+    setBannerPreviews(files.map((file) => URL.createObjectURL(file)));
   };
 
   const handleBannerUpload = async () => {
-    if (!bannerFile || !profile) return;
+    if (bannerFiles.length === 0 || !profile) return;
 
     setUploadingBanner(true);
     setModal({ isOpen: true, status: "loading", title: "กำลังอัปโหลดแบนเนอร์...", message: "" });
 
     try {
-      const ext = bannerFile.name.split(".").pop();
-      const path = `banner_${Date.now()}.${ext}`;
-      const { error: uploadErr } = await supabase.storage
-        .from("banners")
-        .upload(path, bannerFile, { upsert: true });
+      for (const file of bannerFiles) {
+        const ext = file.name.split(".").pop();
+        const path = `banner_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("banners")
+          .upload(path, file, { upsert: true });
 
-      if (uploadErr) throw uploadErr;
+        if (uploadErr) throw uploadErr;
 
-      const { data: urlData } = supabase.storage.from("banners").getPublicUrl(path);
-      const newUrl = urlData.publicUrl;
+        const { data: urlData } = supabase.storage.from("banners").getPublicUrl(path);
+        const newUrl = urlData.publicUrl;
 
-      const { error: insertErr } = await supabase.from("banners").insert({
-        image_url: newUrl,
-        is_active: true,
-        updated_by: profile.id,
-        updated_at: new Date().toISOString(),
-      });
+        const { error: insertErr } = await supabase.from("banners").insert({
+          image_url: newUrl,
+          is_active: true,
+          updated_by: profile.id,
+          updated_at: new Date().toISOString(),
+        });
 
-      if (insertErr) throw insertErr;
+        if (insertErr) throw insertErr;
+      }
 
-      setBannerFile(null);
-      setBannerPreview(null);
+      const uploadedCount = bannerFiles.length;
+      bannerPreviews.forEach((preview) => URL.revokeObjectURL(preview));
+      setBannerFiles([]);
+      setBannerPreviews([]);
       await loadBanners();
-      setModal({ isOpen: true, status: "success", title: "เพิ่มแบนเนอร์สำเร็จ ✅", message: "" });
+      setModal({ isOpen: true, status: "success", title: "เพิ่มแบนเนอร์สำเร็จ ✅", message: `${uploadedCount} รูป` });
     } catch (err) {
       const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ";
       setModal({ isOpen: true, status: "error", title: "เกิดข้อผิดพลาด", message });
@@ -480,13 +492,16 @@ export default function AdminAnnouncements() {
               หน้าแรกจะสลับแบนเนอร์อัตโนมัติทุก 5 วินาที และจะแสดงเฉพาะรายการที่เปิดการแสดงผลอยู่ แนะนำขนาด 1600x600 px หรือ 1920x720 px
             </p>
 
-            {bannerPreview ? (
+            {bannerPreviews.length > 0 ? (
               <div style={{ position: "relative", marginBottom: "16px", borderRadius: "12px", overflow: "hidden", backgroundColor: "#0f172a" }}>
-                <img src={bannerPreview} alt="preview" style={{ width: "100%", height: "220px", objectFit: "contain", display: "block" }} />
+                <div style={{ aspectRatio: "16 / 6", width: "100%", maxHeight: "260px" }}>
+                  <img src={bannerPreviews[0]} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                </div>
                 <button
                   onClick={() => {
-                    setBannerFile(null);
-                    setBannerPreview(null);
+                    bannerPreviews.forEach((preview) => URL.revokeObjectURL(preview));
+                    setBannerFiles([]);
+                    setBannerPreviews([]);
                   }}
                   style={{ position: "absolute", top: "8px", right: "8px", background: "rgba(15,23,42,0.7)", color: "white", border: "none", borderRadius: "50%", width: "28px", height: "28px", cursor: "pointer" }}
                 >
@@ -494,20 +509,20 @@ export default function AdminAnnouncements() {
                 </button>
               </div>
             ) : (
-              <div style={{ width: "100%", height: "220px", backgroundColor: "#f8fafc", border: "2px dashed #cbd5e1", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", marginBottom: "16px" }}>
+              <div style={{ width: "100%", aspectRatio: "16 / 6", minHeight: "180px", maxHeight: "260px", backgroundColor: "#f8fafc", border: "2px dashed #cbd5e1", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", marginBottom: "16px" }}>
                 ยังไม่ได้เลือกรูปแบนเนอร์
               </div>
             )}
 
             <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
               <label style={{ flex: 1, padding: "10px", border: "2px dashed #cbd5e1", borderRadius: "10px", textAlign: "center", cursor: "pointer", color: "#64748b", fontSize: "0.9rem" }}>
-                📁 คลิกเลือกรูปภาพ (PNG, JPG ≤5MB)
-                <input type="file" accept="image/*" onChange={handleBannerSelect} style={{ display: "none" }} />
+                📁 คลิกเลือกรูปภาพหลายไฟล์ (PNG, JPG ≤5MB)
+                <input type="file" accept="image/*" multiple onChange={handleBannerSelect} style={{ display: "none" }} />
               </label>
               <button
                 onClick={handleBannerUpload}
-                disabled={!bannerFile || uploadingBanner}
-                style={{ padding: "10px 20px", backgroundColor: bannerFile ? "#800000" : "#94a3b8", color: "white", border: "none", borderRadius: "10px", fontWeight: "bold", cursor: bannerFile ? "pointer" : "not-allowed" }}
+                disabled={bannerFiles.length === 0 || uploadingBanner}
+                style={{ padding: "10px 20px", backgroundColor: bannerFiles.length > 0 ? "#800000" : "#94a3b8", color: "white", border: "none", borderRadius: "10px", fontWeight: "bold", cursor: bannerFiles.length > 0 ? "pointer" : "not-allowed" }}
               >
                 {uploadingBanner ? "กำลังอัปโหลด..." : "เพิ่มแบนเนอร์"}
               </button>
@@ -531,7 +546,9 @@ export default function AdminAnnouncements() {
                 {banners.map((item, index) => (
                   <div key={item.id} style={{ border: "1px solid #e2e8f0", borderRadius: "14px", padding: "14px", backgroundColor: item.is_active ? "white" : "#f8fafc" }}>
                     <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", backgroundColor: "#0f172a", marginBottom: "12px" }}>
-                      <img src={item.image_url} alt={`banner-${item.id}`} style={{ width: "100%", height: "180px", objectFit: "contain", display: "block" }} />
+                      <div style={{ aspectRatio: "16 / 6", width: "100%", maxHeight: "180px" }}>
+                        <img src={item.image_url} alt={`banner-${item.id}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      </div>
                       <div style={{ position: "absolute", top: "10px", left: "10px", padding: "4px 10px", borderRadius: "999px", backgroundColor: item.is_active ? "#dcfce7" : "#e2e8f0", color: item.is_active ? "#15803d" : "#64748b", fontSize: "0.75rem", fontWeight: 700 }}>
                         {item.is_active ? `แสดงผล #${index + 1}` : "ปิดไว้"}
                       </div>

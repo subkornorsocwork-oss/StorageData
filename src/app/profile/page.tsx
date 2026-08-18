@@ -16,7 +16,7 @@ export default function ProfilePage() {
     }
   }, [loading, role, router]);
 
-  if (loading) {
+  if (loading && !role) {
     return (
       <div
         style={{

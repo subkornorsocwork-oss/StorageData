@@ -72,6 +72,9 @@ const STATUS_LABEL: Record<string, string> = {
   returned: "คืนแล้ว", overdue: "เกินกำหนด", cancelled: "ยกเลิก",
 };
 
+const isPreviewableImage = (url: string) => /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(url);
+const isPreviewablePdf = (url: string) => /\.pdf(\?|$)/i.test(url);
+
 export default function AdminBorrow() {
   const { profile } = useRole();
   const [activeTab, setActiveTab] = useState<"requests"|"inventory">("requests");
@@ -94,6 +97,11 @@ export default function AdminBorrow() {
   const [eqForm, setEqForm]         = useState({ name:"", barcode:"", emoji:"📦", total_qty:1, description:"" });
 
   const [modal, setModal] = useState<ModalState>({ isOpen:false, status:"loading", title:"", message:"" });
+  const [documentModal, setDocumentModal] = useState<{ isOpen: boolean; url: string; title: string }>({
+    isOpen: false,
+    url: "",
+    title: "",
+  });
 
   // ✅ แก้ตรงนี้: เพิ่ม , error ใน destructuring
   const loadRequests = useCallback(async () => {
@@ -219,6 +227,10 @@ export default function AdminBorrow() {
       return matchStatus && matchSearch;
     });
   }, [requests, filterStatus, searchTerm]);
+
+  const openDocumentModal = (url: string, title: string) => {
+    setDocumentModal({ isOpen: true, url, title });
+  };
 
   const handleApprove = async () => {
     if (!actionModal.req) return;
@@ -409,6 +421,7 @@ export default function AdminBorrow() {
                     {filteredRequests.map((req, idx) => {
                       const over = isOverdue(req.return_due_date, req.status);
                       const items = req.borrow_items?.map(i => `${i.equipment?.emoji ?? "📦"} ${i.equipment?.name} x${i.quantity}`).join(", ") ?? "-";
+                      const documentUrl = req.document_url;
                       return (
                         <tr key={req.id} style={{ borderBottom:"1px solid #f1f5f9", backgroundColor: over ? "#fef2f2" : idx%2===0 ? "white" : "#fafafa" }}>
                           <td style={{ padding:"12px 14px", fontSize:"0.85rem" }}>{fmtDate(req.borrow_date)}</td>
@@ -419,8 +432,13 @@ export default function AdminBorrow() {
                           </td>
                           <td style={{ padding:"12px 14px", fontSize:"0.82rem", color:"#475569" }}>{items}</td>
                           <td style={{ padding:"12px 14px" }}>
-                            {req.document_url
-                              ? <a href={req.document_url} target="_blank" rel="noreferrer" style={{ padding:"4px 8px", backgroundColor:"#f1f5f9", color:"#475569", borderRadius:"6px", textDecoration:"none", fontSize:"0.78rem", fontWeight:600 }}>📄 ดูไฟล์</a>
+                            {documentUrl
+                              ? <button
+                                  onClick={() => openDocumentModal(documentUrl, `เอกสารแนบของ ${req.user_name}`)}
+                                  style={{ padding:"4px 8px", backgroundColor:"#f1f5f9", color:"#475569", borderRadius:"6px", textDecoration:"none", fontSize:"0.78rem", fontWeight:600, border:"none", cursor:"pointer" }}
+                                >
+                                  📄 ดูไฟล์
+                                </button>
                               : <span style={{ fontSize:"0.78rem", color:"#94a3b8" }}>-</span>}
                           </td>
                           <td style={{ padding:"12px 14px" }}><StatusBadge req={req} /></td>
@@ -594,6 +612,43 @@ export default function AdminBorrow() {
                 ตกลง
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {documentModal.isOpen && (
+        <div style={{ position:"fixed", inset:0, backgroundColor:"rgba(15,23,42,0.72)", display:"flex", justifyContent:"center", alignItems:"center", zIndex:10000, padding:"20px" }}>
+          <div style={{ backgroundColor:"white", borderRadius:"20px", width:"100%", maxWidth:"980px", maxHeight:"90vh", overflow:"hidden", boxShadow:"0 20px 60px rgba(0,0,0,0.35)" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"20px 24px", borderBottom:"1px solid #e2e8f0" }}>
+              <div>
+                <h3 style={{ margin:"0 0 4px", color:"#0f172a" }}>{documentModal.title}</h3>
+                <p style={{ margin:0, color:"#64748b", fontSize:"0.85rem", wordBreak:"break-all" }}>{documentModal.url}</p>
+              </div>
+              <button onClick={() => setDocumentModal({ isOpen:false, url:"", title:"" })}
+                style={{ width:"40px", height:"40px", border:"none", borderRadius:"999px", backgroundColor:"#f1f5f9", cursor:"pointer", fontSize:"1.1rem", fontWeight:700, color:"#475569" }}>
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding:"24px", backgroundColor:"#0f172a" }}>
+              {isPreviewableImage(documentModal.url) ? (
+                <img src={documentModal.url} alt={documentModal.title} style={{ width:"100%", maxHeight:"70vh", objectFit:"contain", display:"block", backgroundColor:"#0f172a", borderRadius:"12px" }} />
+              ) : isPreviewablePdf(documentModal.url) ? (
+                <iframe
+                  src={documentModal.url}
+                  title={documentModal.title}
+                  style={{ width:"100%", height:"70vh", border:"none", backgroundColor:"white", borderRadius:"12px" }}
+                />
+              ) : (
+                <div style={{ minHeight:"360px", display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"center", gap:"14px", color:"white", textAlign:"center" }}>
+                  <div style={{ fontSize:"1.05rem", fontWeight:700 }}>ไฟล์นี้ไม่รองรับพรีวิวอัตโนมัติ</div>
+                  <a href={documentModal.url} target="_blank" rel="noreferrer"
+                    style={{ padding:"10px 16px", borderRadius:"10px", backgroundColor:"white", color:"#0f172a", textDecoration:"none", fontWeight:700 }}>
+                    เปิดไฟล์ในแท็บใหม่
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

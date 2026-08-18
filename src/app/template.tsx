@@ -46,9 +46,10 @@ export default function Template({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  // หน้า admin ตอน loading — ไม่แสดง skeleton student
- // หน้า admin ตอน loading — แสดง spinner แทน null
-if (loading && isAdminPage) {
+  const showAdminSpinner = loading && isAdminPage && !role;
+
+  // หน้า admin ตอน loading — แสดง spinner เฉพาะตอนยังไม่รู้ role
+if (showAdminSpinner) {
   return (
     <div style={{
       display: "flex", height: "100vh",
