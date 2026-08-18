@@ -148,16 +148,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", width: "100vw", display: "flex", backgroundColor: "#f8fafc", fontFamily: "sans-serif" }}>
-      <div style={{ flex: 1, color: "white", display: "flex", flexDirection: "column", justifyContent: "center", padding: "40px", background: "linear-gradient(135deg, #800000 0%, #4a0404 100%)" }}>
-        <h1 style={{ fontSize: "3rem", fontWeight: "bold", marginBottom: "20px" }}>TU Student<br />Services</h1>
-        <p style={{ fontSize: "1.2rem", opacity: 0.8, lineHeight: "1.6", maxWidth: "200px" }}>
+    <div className="login-shell" style={{ minHeight: "100dvh", width: "100%", display: "flex", backgroundColor: "#f8fafc", fontFamily: "sans-serif", overflowX: "hidden" }}>
+      <div className="login-brand" style={{ flex: 1, color: "white", display: "flex", flexDirection: "column", justifyContent: "center", padding: "40px", background: "linear-gradient(135deg, #800000 0%, #4a0404 100%)" }}>
+        <h1 style={{ fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: "bold", marginBottom: "20px", lineHeight: "1.1", wordBreak: "break-word", overflowWrap: "anywhere" }}>
+          TU Student<br />Services
+        </h1>
+        <p style={{ fontSize: "1.2rem", opacity: 0.8, lineHeight: "1.7", maxWidth: "320px", wordBreak: "break-word", overflowWrap: "anywhere" }}>
           ระบบบริการนักศึกษาแบบครบวงจร คณะสังคมสงเคราะห์ศาสตร์ มหาวิทยาลัยธรรมศาสตร์ ศูนย์รังสิต
         </p>
       </div>
 
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
-        <div style={{ backgroundColor: "white", padding: "40px", borderRadius: "24px", boxShadow: "0 10px 25px rgba(0,0,0,0.05)", width: "100%", maxWidth: "450px" }}>
+      <div className="login-form-wrap" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+        <div className="login-card" style={{ backgroundColor: "white", padding: "40px", borderRadius: "24px", boxShadow: "0 10px 25px rgba(0,0,0,0.05)", width: "100%", maxWidth: "450px" }}>
           <div style={{ textAlign: "center", marginBottom: "30px" }}>
             <h2 style={{ fontSize: "2rem", fontWeight: "bold", color: "#1e293b", margin: "0 0 10px 0" }}>
               {isRegister ? "สมัครสมาชิกใหม่" : "เข้าสู่ระบบ"}
@@ -252,6 +254,61 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 900px) {
+          .login-shell {
+            flex-direction: column;
+          }
+
+          .login-brand {
+            flex: none;
+            width: 100%;
+            min-height: 220px;
+            padding: 28px 22px;
+            justify-content: flex-end;
+          }
+
+          .login-brand h1 {
+            font-size: clamp(1.8rem, 9vw, 2.6rem) !important;
+            margin-bottom: 14px !important;
+          }
+
+          .login-brand p {
+            font-size: 1rem !important;
+            max-width: 100% !important;
+          }
+
+          .login-form-wrap {
+            flex: none;
+            width: 100%;
+            padding: 16px 14px 28px;
+            align-items: stretch;
+          }
+
+          .login-card {
+            max-width: none !important;
+            padding: 28px 18px !important;
+            border-radius: 22px !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .login-brand {
+            min-height: 240px;
+            padding: 24px 18px;
+          }
+
+          .login-card {
+            padding: 24px 16px !important;
+          }
+
+          .login-card input,
+          .login-card select {
+            font-size: 16px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
