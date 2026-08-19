@@ -253,22 +253,22 @@ export default function StudentProfile() {
   const complaintStatusText: Record<string, string>  = { received: "รับเรื่องแล้ว", in_progress: "กำลังดำเนินการ", resolved: "แก้ไขแล้ว", closed: "ปิดเรื่อง" };
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f1f5f9", padding: "40px 20px", fontFamily: "sans-serif", overflowX: "hidden" }}>
-      <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-        <div className="student-profile-grid" style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: "30px" }}>
+    <div className="student-profile-root" style={{ minHeight: "100vh", backgroundColor: "#f1f5f9", padding: "36px 18px", fontFamily: "sans-serif", overflowX: "hidden" }}>
+      <div className="student-profile-container" style={{ maxWidth: "1160px", margin: "0 auto" }}>
+        <div className="student-profile-grid" style={{ display: "grid", gridTemplateColumns: "280px minmax(0, 1fr)", gap: "24px" }}>
 
           {/* ── ซ้าย ── */}
           <aside className="student-profile-aside">
-            <div style={{ background: "white", borderRadius: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", padding: "30px", textAlign: "center" }}>
-              <div style={{ width: "100px", height: "100px", borderRadius: "50%", background: "#f1f5f9", margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.5rem", border: "3px solid #800000" }}>👤</div>
-              <h2 style={{ margin: "0", color: "#1e293b", fontSize: "1.25rem" }}>{userData.name}</h2>
-              <p style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "20px" }}>{userData.id}</p>
+            <div style={{ background: "white", borderRadius: "22px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", padding: "24px", textAlign: "center" }}>
+              <div style={{ width: "90px", height: "90px", borderRadius: "50%", background: "#f1f5f9", margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.2rem", border: "3px solid #800000" }}>👤</div>
+              <h2 style={{ margin: "0", color: "#1e293b", fontSize: "1.15rem", lineHeight: 1.25 }}>{userData.name}</h2>
+              <p style={{ color: "#64748b", fontSize: "0.85rem", marginBottom: "16px" }}>{userData.id}</p>
 
-              <div style={{ textAlign: "left", borderTop: "1px solid #f1f5f9", paddingTop: "20px", display: "flex", flexDirection: "column", gap: "15px" }}>
+              <div style={{ textAlign: "left", borderTop: "1px solid #f1f5f9", paddingTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
                 {[{ label: "คณะ", value: userData.faculty }, { label: "อีเมล", value: userData.email }, { label: "เบอร์โทรศัพท์", value: userData.phone }].map((item) => (
                   <div key={item.label}>
-                    <div style={{ fontSize: "0.7rem", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{item.label}</div>
-                    <div style={{ fontSize: "0.9rem", color: "#334155", fontWeight: 500 }}>{item.value}</div>
+                    <div style={{ fontSize: "0.68rem", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>{item.label}</div>
+                    <div style={{ fontSize: "0.88rem", color: "#334155", fontWeight: 500, wordBreak: "break-word" }}>{item.value}</div>
                   </div>
                 ))}
               </div>
@@ -277,12 +277,12 @@ export default function StudentProfile() {
               {saveMsg && <p style={{ color: "#16a34a", fontSize: "0.8rem", marginTop: "10px" }}>{saveMsg}</p>}
               <button
                 onClick={() => setIsEditModalOpen(true)}
-                style={{ marginTop: "20px", width: "100%", padding: "10px", borderRadius: "10px", border: "1px solid #cbd5e1", background: "white", cursor: "pointer", fontWeight: 600, color: "#475569" }}>
+                style={{ marginTop: "16px", width: "100%", padding: "9px 10px", borderRadius: "10px", border: "1px solid #cbd5e1", background: "white", cursor: "pointer", fontWeight: 600, color: "#475569", fontSize: "0.88rem" }}>
                 แก้ไขข้อมูลส่วนตัว
               </button>
               <button
                 onClick={() => setIsLogoutModalOpen(true)}
-                style={{ marginTop: "10px", width: "100%", padding: "10px", borderRadius: "10px", border: "1px solid #fca5a5", background: "#fef2f2", cursor: "pointer", fontWeight: 600, color: "#dc2626" }}>
+                style={{ marginTop: "10px", width: "100%", padding: "9px 10px", borderRadius: "10px", border: "1px solid #fca5a5", background: "#fef2f2", cursor: "pointer", fontWeight: 600, color: "#dc2626", fontSize: "0.88rem" }}>
                 🚪 ออกจากระบบ
               </button>
             </div>
@@ -290,14 +290,14 @@ export default function StudentProfile() {
 
           {/* ── ขวา ── */}
           <section className="student-profile-section" style={{ minWidth: 0 }}>
-            <div style={{ background: "white", borderRadius: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", padding: "30px", minWidth: 0 }}>
+            <div className="student-profile-main-card" style={{ background: "white", borderRadius: "22px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", padding: "24px", minWidth: 0 }}>
               {/* Tabs */}
-              <div style={{ display: "flex", gap: "10px", borderBottom: "1px solid #e2e8f0", marginBottom: "20px", paddingBottom: "5px", overflowX: "auto" }}>
+              <div className="student-profile-tabs" style={{ display: "flex", gap: "8px", borderBottom: "1px solid #e2e8f0", marginBottom: "18px", paddingBottom: "6px", flexWrap: "wrap" }}>
                 {(["booking","borrow","complaint","lost-found"] as TabType[]).map((tab) => {
                   const labels: Record<TabType, string> = { booking: "📅 จองสถานที่", borrow: "📦 ยืม-คืน", complaint: "📢 แจ้งเรื่อง", "lost-found": "🔍 ของหาย" };
                   return (
                     <button key={tab} onClick={() => setActiveTab(tab)}
-                      style={{ padding: "10px 15px", border: "none", background: "transparent", fontSize: "0.9rem", fontWeight: 600, color: activeTab === tab ? "#800000" : "#64748b", cursor: "pointer", borderBottom: activeTab === tab ? "3px solid #800000" : "3px solid transparent", whiteSpace: "nowrap", transition: "all 0.2s" }}>
+                      style={{ padding: "9px 12px", border: "none", background: "transparent", fontSize: "0.86rem", fontWeight: 600, color: activeTab === tab ? "#800000" : "#64748b", cursor: "pointer", borderBottom: activeTab === tab ? "3px solid #800000" : "3px solid transparent", whiteSpace: "nowrap", transition: "all 0.2s" }}>
                       {labels[tab]}
                     </button>
                   );
@@ -308,7 +308,7 @@ export default function StudentProfile() {
               {loading ? (
                 <p style={{ color: "#94a3b8", textAlign: "center", padding: "40px" }}>กำลังโหลด...</p>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {activeTab === "booking" && (bookings.length === 0 ? <Empty /> : bookings.map((b) => (
                     <HistoryItem key={b.id}
                       title={b.locations?.name ?? "-"}
@@ -353,15 +353,15 @@ export default function StudentProfile() {
             </div>
 
             {/* Help Banner */}
-            <div style={{ background: "#800000", padding: "20px", borderRadius: "20px", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "20px", flexWrap: "wrap", gap: "15px" }}>
+            <div className="student-profile-help" style={{ background: "#800000", padding: "18px 20px", borderRadius: "18px", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px", flexWrap: "wrap", gap: "12px" }}>
               <div>
                 <h4 style={{ margin: 0 }}>ต้องการความช่วยเหลือ?</h4>
-                <p style={{ margin: "4px 0 0", fontSize: "0.8rem", opacity: 0.8 }}>หากพบปัญหา ติดต่อ กน.สค. ได้ที่ชั้น 1 คณะฯ</p>
+                <p style={{ margin: "4px 0 0", fontSize: "0.78rem", opacity: 0.8 }}>หากพบปัญหา ติดต่อ กน.สค. ได้ที่ชั้น 1 คณะฯ</p>
               </div>
               {/* ✅ มี onClick แล้ว */}
               <button
                 onClick={() => setIsContactModalOpen(true)}
-                style={{ background: "white", color: "#800000", border: "none", padding: "8px 16px", borderRadius: "8px", fontWeight: 700, cursor: "pointer" }}>
+                style={{ background: "white", color: "#800000", border: "none", padding: "8px 14px", borderRadius: "8px", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}>
                 ติดต่อเจ้าหน้าที่
               </button>
             </div>
@@ -403,20 +403,37 @@ export default function StudentProfile() {
             gap: 18px !important;
           }
 
-          .student-profile-section > div {
+          .student-profile-tabs {
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .student-profile-main-card {
             padding: 22px !important;
             border-radius: 20px !important;
           }
         }
 
         @media (max-width: 560px) {
-          .student-profile-section > div {
+          .student-profile-root {
+            padding: 16px 12px !important;
+          }
+
+          .student-profile-main-card {
             padding: 18px !important;
           }
 
-          .student-profile-section [style*="overflowX: auto"] {
-            overflow-x: auto !important;
-            -webkit-overflow-scrolling: touch;
+          .student-profile-help {
+            padding: 16px !important;
+          }
+
+          .student-profile-help h4 {
+            font-size: 0.95rem !important;
+          }
+
+          .student-profile-help p {
+            font-size: 0.74rem !important;
           }
         }
       ` }} />
@@ -430,13 +447,13 @@ function HistoryItem({ title, desc, statusColor, statusText, onDetail }: {
   onDetail: () => void; // ✅ เพิ่ม prop
 }) {
   return (
-    <div style={{ padding: "15px", borderRadius: "16px", border: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", minWidth: 0 }}>
-      <div>
+    <div style={{ padding: "14px", borderRadius: "16px", border: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", minWidth: 0 }}>
+      <div style={{ minWidth: 0, flex: "1 1 0" }}>
         <div style={{ fontWeight: 700, color: "#1e293b", wordBreak: "break-word" }}>{title}</div>
         <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "4px", wordBreak: "break-word" }}>{desc}</div>
         <div style={{ marginTop: "8px", fontSize: "0.75rem", fontWeight: 600, color: statusColor }}>● {statusText}</div>
       </div>
-      <button onClick={onDetail} style={{ padding: "6px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: "0.8rem", cursor: "pointer" }}>
+      <button onClick={onDetail} style={{ padding: "6px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: "0.8rem", cursor: "pointer", flexShrink: 0 }}>
         ดูรายละเอียด
       </button>
     </div>
