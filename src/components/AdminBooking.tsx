@@ -279,15 +279,15 @@ export default function AdminBooking() {
   // ─── Render ──────────────────────────────────────────────────
 
   return (
-    <div style={{ backgroundColor: "#f1f5f9", padding: "40px" }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+    <div className="admin-booking-root" style={{ backgroundColor: "#f1f5f9", padding: "40px" }}>
+      <div className="admin-booking-shell" style={{ maxWidth: "1200px", margin: "0 auto" }}>
 
         <h1 style={{ color: "#800000", marginBottom: "24px", fontSize: "1.5rem" }}>
           📅 ระบบจัดการสถานที่และปฏิทิน
         </h1>
 
         {/* ── Tabs ── */}
-        <div style={{ display: "flex", gap: "8px", marginBottom: "30px", borderBottom: "2px solid #e2e8f0", paddingBottom: "0" }}>
+        <div className="admin-booking-tabs" style={{ display: "flex", gap: "8px", marginBottom: "30px", borderBottom: "2px solid #e2e8f0", paddingBottom: "0" }}>
           {([
             { key: "requests", label: "📝 จัดการคำขอจอง" },
             { key: "calendar", label: "🗓️ ปฏิทินการใช้งาน" },
@@ -411,7 +411,7 @@ export default function AdminBooking() {
 
         {/* ══════════ แท็บ 2: ปฏิทิน ══════════ */}
         {activeTab === "calendar" && (
-          <div style={{ backgroundColor: "white", padding: "30px", borderRadius: "18px", boxShadow: "0 2px 8px rgba(0,0,0,0.07)" }}>
+          <div className="admin-booking-card" style={{ backgroundColor: "white", padding: "30px", borderRadius: "18px", boxShadow: "0 2px 8px rgba(0,0,0,0.07)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
               <button onClick={() => changeCalMonth(-1)} style={{ border: "none", background: "#f1f5f9", borderRadius: "8px", padding: "8px 14px", cursor: "pointer", fontWeight: "bold", fontSize: "1rem" }}>&lt;</button>
               <h2 style={{ margin: 0, color: "#800000", fontSize: "1.2rem" }}>
@@ -420,7 +420,8 @@ export default function AdminBooking() {
               <button onClick={() => changeCalMonth(1)} style={{ border: "none", background: "#f1f5f9", borderRadius: "8px", padding: "8px 14px", cursor: "pointer", fontWeight: "bold", fontSize: "1rem" }}>&gt;</button>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px" }}>
+            <div className="admin-booking-calendar-scroll" style={{ overflowX: "auto" }}>
+              <div className="admin-booking-calendar-grid" style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(90px, 1fr))", gap: "8px", minWidth: "700px" }}>
               {THAI_DAYS.map(d => (
                 <div key={d} style={{ textAlign: "center", fontWeight: "bold", color: "#800000", paddingBottom: "10px", borderBottom: "2px solid #fecaca", fontSize: "0.9rem" }}>{d}</div>
               ))}
@@ -429,19 +430,27 @@ export default function AdminBooking() {
                 const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                 const dayBookings = approvedBookings.filter(b => b.booking_date === dateStr);
                 return (
-                  <div key={day} style={{ minHeight: "90px", padding: "8px", border: "1px solid #f1f5f9", borderRadius: "10px", backgroundColor: "#fafafa" }}>
+                  <div key={day} className="admin-booking-day" style={{ minHeight: "120px", padding: "8px", border: "1px solid #f1f5f9", borderRadius: "10px", backgroundColor: "#fafafa", overflow: "hidden" }}>
                     <div style={{ fontWeight: "bold", color: "#475569", marginBottom: "5px", fontSize: "0.9rem" }}>{day}</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
                       {dayBookings.map(b => (
-                        <div key={b.id} style={{ backgroundColor: "#800000", color: "white", fontSize: "0.68rem", padding: "3px 6px", borderRadius: "4px", lineHeight: "1.3" }}>
-                          <strong>{fmtTime(b.start_time)}</strong> {b.location_name}
-                          <div style={{ fontSize: "0.63rem", opacity: 0.9 }}>ยื่นเมื่อ {fmtDateTime(b.created_at)}</div>
+                        <div key={b.id} className="admin-booking-daybook" style={{ backgroundColor: "#800000", color: "white", fontSize: "0.68rem", padding: "6px 8px", borderRadius: "6px", lineHeight: "1.35", overflow: "hidden", wordBreak: "break-word" }}>
+                          <div style={{ fontWeight: 700, marginBottom: "2px" }}>
+                            {fmtTime(b.start_time)} – {fmtTime(b.end_time)} • {b.location_name}
+                          </div>
+                          <div style={{ fontSize: "0.64rem", opacity: 0.95, overflowWrap: "anywhere" }}>
+                            {b.user_name}
+                            {b.org_name ? ` • ${b.org_name}` : ""}
+                            {b.user_faculty ? ` • ${b.user_faculty}` : ""}
+                          </div>
+                          <div style={{ fontSize: "0.62rem", opacity: 0.9 }}>ยื่นเมื่อ {fmtDateTime(b.created_at)}</div>
                         </div>
                       ))}
                     </div>
                   </div>
                 );
               })}
+              </div>
             </div>
           </div>
         )}
@@ -720,7 +729,42 @@ export default function AdminBooking() {
         </div>
       )}
 
-      <style dangerouslySetInnerHTML={{ __html: `@keyframes spin { to { transform: rotate(360deg); } }` }} />
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .admin-booking-root { overflow-x: hidden; }
+        @media (max-width: 768px) {
+          .admin-booking-root { padding: 12px !important; }
+          .admin-booking-shell { max-width: 100% !important; }
+          .admin-booking-tabs {
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 4px;
+          }
+          .admin-booking-tabs button {
+            flex: 0 0 auto;
+            padding: 8px 12px !important;
+            font-size: 0.8rem !important;
+          }
+          .admin-booking-card {
+            padding: 16px !important;
+            border-radius: 14px !important;
+          }
+          .admin-booking-calendar-scroll {
+            margin: 0 -16px;
+            padding: 0 16px 8px;
+          }
+          .admin-booking-calendar-grid {
+            min-width: 720px !important;
+          }
+          .admin-booking-day {
+            min-height: 130px !important;
+          }
+          .admin-booking-daybook {
+            font-size: 0.62rem !important;
+          }
+        }
+      ` }} />
     </div>
   );
 }

@@ -84,7 +84,7 @@ export default function ComplaintPage() {
           contact_info: isAnonymous ? null : contact.trim(),
           severity,
           status: "received",
-          user_id: isAnonymous ? null : session?.user?.id ?? null,
+          user_id: session?.user?.id ?? null,
         }),
         12000,
       );

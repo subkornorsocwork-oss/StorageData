@@ -30,7 +30,6 @@ export default function StudentBorrow() {
   const [loading, setLoading] = useState(true);
 
   // State สำหรับฟอร์มและบาร์โค้ด
-  const [barcode, setBarcode] = useState("");
   const [bookerType, setBookerType] = useState<"student" | "club">("student");
   const [selectedClub, setSelectedClub] = useState<string>("");
   const [customClub, setCustomClub] = useState<string>("");
@@ -94,25 +93,6 @@ export default function StudentBorrow() {
       }
       return item;
     }));
-  };
-
-  const handleBarcodeScan = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!barcode.trim()) return;
-
-    const foundItem = equipment.find(item => item.barcode === barcode.trim());
-
-    if (foundItem) {
-      if (foundItem.quantity < foundItem.available_qty) {
-        handleQuantityChange(foundItem.id, 1);
-      } else {
-        setModalState({ isOpen: true, status: "error", title: "สินค้าเกินโควต้า", message: `ไม่สามารถเพิ่ม ${foundItem.name} ได้เนื่องจากของหมดหรือเกินจำนวนที่มีอยู่` });
-      }
-    } else {
-      setModalState({ isOpen: true, status: "error", title: "ไม่พบข้อมูล", message: `ไม่พบอุปกรณ์ที่ตรงกับรหัสบาร์โค้ด: ${barcode}` });
-    }
-    
-    setBarcode("");
   };
 
   const selectedItems = equipment.filter(item => item.quantity > 0);
@@ -263,36 +243,6 @@ export default function StudentBorrow() {
           {/* ฝั่งซ้าย: เลือกอุปกรณ์ */}
           <div style={{ flex: '1.5 1 500px', display: 'flex', flexDirection: 'column' }}>
             
-            <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', flexWrap: 'wrap', gap: '15px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <div style={{ width: '45px', height: '45px', backgroundColor: '#f1f5f9', borderRadius: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '1.5rem' }}>
-                  📷
-                </div>
-                <div>
-                  <h2 style={{ fontSize: '1.1rem', color: '#1e293b', margin: '0 0 4px 0', fontWeight: 'bold' }}>
-                    สแกนบาร์โค้ดเพิ่มอุปกรณ์
-                  </h2>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
-                    ทดลองพิมพ์บาร์โค้ดที่มีในระบบ แล้วกด Enter
-                  </p>
-                </div>
-              </div>
-              
-              <form onSubmit={handleBarcodeScan} style={{ display: 'flex', gap: '10px', width: '100%', maxWidth: '350px' }}>
-                <input
-                  type="text"
-                  value={barcode}
-                  onChange={(e) => setBarcode(e.target.value)}
-                  placeholder="สแกนหรือพิมพ์รหัสที่นี่..."
-                  autoFocus
-                  style={{ flex: 1, padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '1rem', backgroundColor: '#f8fafc' }}
-                />
-                <button type="submit" style={{ padding: '0 20px', backgroundColor: '#1e293b', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}>
-                  เพิ่ม
-                </button>
-              </form>
-            </div>
-
             <h2 style={{ color: '#1e293b', marginTop: 0, marginBottom: '20px' }}>1. เลือกอุปกรณ์ที่ต้องการยืม</h2>
             
             {loading ? (

@@ -142,7 +142,7 @@ function DetailModal({ item, type, onClose }: { item: any; type: TabType; onClos
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: "20px" }}>
-      <div style={{ background: "white", padding: "30px", borderRadius: "20px", width: "100%", maxWidth: "450px", boxShadow: "0 10px 25px rgba(0,0,0,0.1)", maxHeight: "80vh", overflowY: "auto" }}>
+      <div style={{ background: "white", padding: "30px", borderRadius: "20px", width: "100%", maxWidth: "450px", boxShadow: "0 10px 25px rgba(0,0,0,0.1)", maxHeight: "80vh", overflowY: "auto", boxSizing: "border-box" }}>
         <h3 style={{ margin: "0 0 20px", color: "#0f172a" }}>📋 รายละเอียด</h3>
 
         {/* แสดงรูป ถ้าเป็น lost-found และมี image_url */}
@@ -152,9 +152,9 @@ function DetailModal({ item, type, onClose }: { item: any; type: TabType; onClos
 
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {rows.map((r) => (
-            <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", background: "#f8fafc", borderRadius: "10px", gap: "10px" }}>
-              <span style={{ fontSize: "0.85rem", color: "#64748b", whiteSpace: "nowrap" }}>{r.label}</span>
-              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#334155", textAlign: "right" }}>{r.value}</span>
+            <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", background: "#f8fafc", borderRadius: "10px", gap: "10px", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "0.85rem", color: "#64748b", whiteSpace: "nowrap", flexShrink: 0 }}>{r.label}</span>
+              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#334155", textAlign: "right", overflowWrap: "anywhere", wordBreak: "break-word", minWidth: 0, flex: "1 1 180px" }}>{r.value}</span>
             </div>
           ))}
         </div>
@@ -253,12 +253,12 @@ export default function StudentProfile() {
   const complaintStatusText: Record<string, string>  = { received: "รับเรื่องแล้ว", in_progress: "กำลังดำเนินการ", resolved: "แก้ไขแล้ว", closed: "ปิดเรื่อง" };
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f1f5f9", padding: "40px 20px", fontFamily: "sans-serif" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "#f1f5f9", padding: "40px 20px", fontFamily: "sans-serif", overflowX: "hidden" }}>
       <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: "30px" }}>
+        <div className="student-profile-grid" style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: "30px" }}>
 
           {/* ── ซ้าย ── */}
-          <aside>
+          <aside className="student-profile-aside">
             <div style={{ background: "white", borderRadius: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", padding: "30px", textAlign: "center" }}>
               <div style={{ width: "100px", height: "100px", borderRadius: "50%", background: "#f1f5f9", margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.5rem", border: "3px solid #800000" }}>👤</div>
               <h2 style={{ margin: "0", color: "#1e293b", fontSize: "1.25rem" }}>{userData.name}</h2>
@@ -289,8 +289,8 @@ export default function StudentProfile() {
           </aside>
 
           {/* ── ขวา ── */}
-          <section>
-            <div style={{ background: "white", borderRadius: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", padding: "30px" }}>
+          <section className="student-profile-section" style={{ minWidth: 0 }}>
+            <div style={{ background: "white", borderRadius: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", padding: "30px", minWidth: 0 }}>
               {/* Tabs */}
               <div style={{ display: "flex", gap: "10px", borderBottom: "1px solid #e2e8f0", marginBottom: "20px", paddingBottom: "5px", overflowX: "auto" }}>
                 {(["booking","borrow","complaint","lost-found"] as TabType[]).map((tab) => {
@@ -395,6 +395,31 @@ export default function StudentProfile() {
       {selectedItem && (
         <DetailModal item={selectedItem.item} type={selectedItem.type} onClose={() => setSelectedItem(null)} />
       )}
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media (max-width: 900px) {
+          .student-profile-grid {
+            grid-template-columns: 1fr !important;
+            gap: 18px !important;
+          }
+
+          .student-profile-section > div {
+            padding: 22px !important;
+            border-radius: 20px !important;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .student-profile-section > div {
+            padding: 18px !important;
+          }
+
+          .student-profile-section [style*="overflowX: auto"] {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+          }
+        }
+      ` }} />
     </div>
   );
 }
@@ -405,10 +430,10 @@ function HistoryItem({ title, desc, statusColor, statusText, onDetail }: {
   onDetail: () => void; // ✅ เพิ่ม prop
 }) {
   return (
-    <div style={{ padding: "15px", borderRadius: "16px", border: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+    <div style={{ padding: "15px", borderRadius: "16px", border: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", minWidth: 0 }}>
       <div>
-        <div style={{ fontWeight: 700, color: "#1e293b" }}>{title}</div>
-        <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "4px" }}>{desc}</div>
+        <div style={{ fontWeight: 700, color: "#1e293b", wordBreak: "break-word" }}>{title}</div>
+        <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "4px", wordBreak: "break-word" }}>{desc}</div>
         <div style={{ marginTop: "8px", fontSize: "0.75rem", fontWeight: 600, color: statusColor }}>● {statusText}</div>
       </div>
       <button onClick={onDetail} style={{ padding: "6px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: "0.8rem", cursor: "pointer" }}>
