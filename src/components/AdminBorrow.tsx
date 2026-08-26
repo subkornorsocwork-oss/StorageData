@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRole } from "@/context/RoleContext";
 import AdminBorrowControls from "@/components/AdminBorrowControls";
+import { compareBarcodes } from "@/lib/sortBarcodes";
 
 // ── Types ──────────────────────────────────────────────────
 interface Equipment {
@@ -78,13 +79,6 @@ const STATUS_LABEL: Record<string, string> = {
 
 const isPreviewableImage = (url: string) => /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(url);
 const isPreviewablePdf = (url: string) => /\.pdf(\?|$)/i.test(url);
-const compareBarcodes = (a: Equipment, b: Equipment) => {
-  if (!a.barcode && !b.barcode) return a.id - b.id;
-  if (!a.barcode) return 1;
-  if (!b.barcode) return -1;
-  return a.barcode.localeCompare(b.barcode, undefined, { numeric: true, sensitivity: "base" });
-};
-
 export default function AdminBorrow() {
   const { profile } = useRole();
   const [activeTab, setActiveTab] = useState<"requests"|"inventory"|"controls">("requests");
@@ -236,7 +230,10 @@ export default function AdminBorrow() {
   const loadEquipments = useCallback(async () => {
     setLoadingEq(true);
     const { data } = await supabase.from("equipment").select("*").order("barcode", { ascending: true, nullsFirst: false });
-    setEquipments([...(data ?? [])].sort(compareBarcodes));
+    setEquipments([...(data ?? [])].sort((a, b) => {
+      const barcodeOrder = compareBarcodes(a.barcode, b.barcode);
+      return barcodeOrder || a.id - b.id;
+    }));
     setLoadingEq(false);
   }, []);
 

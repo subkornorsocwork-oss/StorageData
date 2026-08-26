@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { compareBarcodes } from "@/lib/sortBarcodes";
 
 // 🎯 1. สร้าง Interface กำหนดรูปแบบข้อมูลให้ชัดเจน (แก้ปัญหา Type Any แจ้งเตือน)
 interface EquipmentItem {
@@ -76,7 +77,10 @@ export default function StudentBorrow() {
         const formattedData: EquipmentItem[] = data.map(item => ({
           ...item,
           quantity: 0 
-        }));
+        })).sort((a, b) => {
+          const barcodeOrder = compareBarcodes(a.barcode, b.barcode);
+          return barcodeOrder || a.id - b.id;
+        });
         setEquipment(formattedData);
       }
     } catch (error) {
