@@ -4,6 +4,29 @@
 alter table public.borrow_items enable row level security;
 alter table public.borrow_requests enable row level security;
 
+-- The item INSERT policy checks its parent request with EXISTS. PostgreSQL
+-- applies RLS inside that subquery too, so the owner must be able to read
+-- their own request for the check to evaluate to true.
+drop policy if exists "users can read own borrow requests" on public.borrow_requests;
+create policy "users can read own borrow requests"
+on public.borrow_requests
+for select
+to authenticated
+using (user_id = auth.uid());
+
+drop policy if exists "users can read own borrow items" on public.borrow_items;
+create policy "users can read own borrow items"
+on public.borrow_items
+for select
+to authenticated
+using (
+  exists (
+    select 1 from public.borrow_requests r
+    where r.id = borrow_items.borrow_request_id
+      and r.user_id = auth.uid()
+  )
+);
+
 drop policy if exists "users can submit borrow return proof" on public.borrow_requests;
 create policy "users can submit borrow return proof"
 on public.borrow_requests
