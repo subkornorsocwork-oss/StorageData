@@ -4,13 +4,18 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 15000): Promise<T> {
-  return await Promise.race([
-    promise,
-    new Promise<T>((_, reject) => {
-      setTimeout(() => reject(new Error("คำขอใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง")), timeoutMs);
-    }),
-  ]);
+async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 8000): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("เชื่อมต่อระบบช้าเกินไป กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง")), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 export default function LoginPage() {
@@ -31,7 +36,7 @@ export default function LoginPage() {
     const checkExistingSession = async () => {
       const {
         data: { session },
-      } = await supabase.auth.getSession();
+      } = await withTimeout(supabase.auth.getSession());
 
       if (!session?.user) return;
 
@@ -44,7 +49,9 @@ export default function LoginPage() {
       router.replace(profile?.role === "admin" ? "/admin" : "/");
     };
 
-    void checkExistingSession();
+    void checkExistingSession().catch((error: unknown) => {
+      console.warn("Session check failed; showing login form:", error);
+    });
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,7 +79,7 @@ export default function LoginPage() {
             password,
             options: { data: { full_name: fullName } },
           }),
-          15000,
+          8000,
         );
 
         if (authError) throw authError;
@@ -83,7 +90,7 @@ export default function LoginPage() {
               email: fullEmail,
               password,
             }),
-            15000,
+            8000,
           );
 
           if (signInErr) throw signInErr;
@@ -98,7 +105,7 @@ export default function LoginPage() {
               email: fullEmail,
               role: "student",
             }),
-            15000,
+            8000,
           );
 
           if (profileError) throw profileError;
@@ -111,7 +118,7 @@ export default function LoginPage() {
             email: fullEmail,
             password,
           }),
-          15000,
+          8000,
         );
 
         if (loginError) {
@@ -125,7 +132,7 @@ export default function LoginPage() {
         if (userId) {
           const { data: profile } = await withTimeout(
             supabase.from("profiles").select("role").eq("id", userId).maybeSingle(),
-            15000,
+            8000,
           );
 
           router.replace(profile?.role === "admin" ? "/admin" : "/");
