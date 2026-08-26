@@ -31,6 +31,7 @@ interface BorrowRequest {
   admin_note: string | null;
   created_at: string;
   document_url: string | null;
+  return_proof_url?: string | null;
   user_name?: string;
   student_id?: string;
   borrow_items?: { quantity: number; equipment: { name: string; emoji: string | null } }[];
@@ -101,6 +102,7 @@ export default function AdminBorrow() {
     url: "",
     title: "",
   });
+  const [returnProof, setReturnProof] = useState<File | null>(null);
 
   // ✅ แก้ตรงนี้: เพิ่ม , error ใน destructuring
   const loadRequests = useCallback(async () => {
@@ -269,8 +271,18 @@ export default function AdminBorrow() {
     if (!actionModal.req) return;
     setActionModal(p => ({ ...p, isOpen: false }));
     setModal({ isOpen: true, status: "loading", title: "กำลังบันทึกการคืน...", message: "" });
+    let returnProofUrl: string | null = actionModal.req.return_proof_url ?? null;
+    if (returnProof) {
+      const path = `${actionModal.req.user_id}/return-proof-${actionModal.req.id}-${Date.now()}.${returnProof.name.split(".").pop()}`;
+      const { error: uploadError } = await supabase.storage.from("documents").upload(path, returnProof);
+      if (uploadError) {
+        setModal({ isOpen: true, status: "error", title: "อัปโหลดภาพไม่สำเร็จ", message: uploadError.message });
+        return;
+      }
+      returnProofUrl = supabase.storage.from("documents").getPublicUrl(path).data.publicUrl;
+    }
     const { error } = await supabase.from("borrow_requests").update({
-      status: "returned", actual_return: new Date().toISOString(),
+      status: "returned", actual_return: new Date().toISOString(), return_proof_url: returnProofUrl,
     }).eq("id", actionModal.req.id);
     if (error) {
       setModal({ isOpen: true, status: "error", title: "เกิดข้อผิดพลาด", message: error.message });
@@ -280,6 +292,7 @@ export default function AdminBorrow() {
         if (eq) await supabase.from("equipment").update({ available_qty: eq.available_qty + item.quantity }).eq("id", eq.id);
       }
       setModal({ isOpen: true, status: "success", title: "บันทึกการคืนสำเร็จ ✅", message: "" });
+      setReturnProof(null);
       loadRequests(); loadEquipments();
     }
   };
@@ -388,7 +401,7 @@ export default function AdminBorrow() {
                 <table style={{ width:"100%", borderCollapse:"collapse", minWidth:"800px" }}>
                   <thead>
                     <tr style={{ backgroundColor:"#f8fafc", borderBottom:"2px solid #800000" }}>
-                      {["วันที่ยืม","กำหนดคืน","ผู้ยืม","อุปกรณ์","เอกสาร","สถานะ","จัดการ"].map(h => (
+                      {["วันที่ยืม","กำหนดคืน","ผู้ยืม / ทะเบียน / โทรศัพท์","อุปกรณ์","เอกสาร / ภาพคืน","สถานะ","จัดการ"].map(h => (
                         <th key={h} style={{ padding:"12px 14px", textAlign:"left", fontSize:"0.82rem", fontWeight:700, color:"#64748b" }}>{h}</th>
                       ))}
                     </tr>
@@ -404,17 +417,22 @@ export default function AdminBorrow() {
                           <td style={{ padding:"12px 14px", fontSize:"0.85rem", color: over ? "#b91c1c" : "#ef4444", fontWeight:600 }}>{fmtDateTime(req.return_due_date)}</td>
                           <td style={{ padding:"12px 14px" }}>
                             <div style={{ fontWeight:600, fontSize:"0.875rem" }}>{req.user_name}</div>
-                            <div style={{ fontSize:"0.75rem", color:"#94a3b8" }}>{req.org_name ?? req.student_id}</div>
+                            <div style={{ fontSize:"0.75rem", color:"#475569" }}>ทะเบียน: {req.student_id ?? "-"}</div>
+                            <div style={{ fontSize:"0.75rem", color:"#94a3b8" }}>โทร: {req.phone ?? "-"}</div>
+                            <div style={{ fontSize:"0.7rem", color:"#94a3b8" }}>ยื่นเมื่อ: {fmtDateTime(req.created_at)}</div>
                           </td>
                           <td style={{ padding:"12px 14px", fontSize:"0.82rem", color:"#475569" }}>{items}</td>
                           <td style={{ padding:"12px 14px" }}>
-                            {documentUrl
-                              ? <button
+                            {documentUrl || req.return_proof_url
+                              ? <div style={{ display:"flex", flexDirection:"column", gap:"4px" }}>
+                                {documentUrl && <button
                                   onClick={() => openDocumentModal(documentUrl, `เอกสารแนบของ ${req.user_name}`)}
                                   style={{ padding:"4px 8px", backgroundColor:"#f1f5f9", color:"#475569", borderRadius:"6px", textDecoration:"none", fontSize:"0.78rem", fontWeight:600, border:"none", cursor:"pointer" }}
                                 >
-                                  📄 ดูไฟล์
-                                </button>
+                                  📄 เอกสารโครงการ
+                                </button>}
+                                {req.return_proof_url && <button onClick={() => openDocumentModal(req.return_proof_url!, `ภาพพัสดุที่คืนของ ${req.user_name}`)} style={{ padding:"4px 8px", backgroundColor:"#ecfdf5", color:"#047857", borderRadius:"6px", fontSize:"0.78rem", fontWeight:600, border:"none", cursor:"pointer" }}>🖼️ ภาพคืน</button>}
+                              </div>
                               : <span style={{ fontSize:"0.78rem", color:"#94a3b8" }}>-</span>}
                           </td>
                           <td style={{ padding:"12px 14px" }}><StatusBadge req={req} /></td>
@@ -429,7 +447,7 @@ export default function AdminBorrow() {
                                 </>
                               )}
                               {req.status === "borrowing" && (
-                                <button onClick={() => setActionModal({ isOpen:true, type:"return", req, note:"" })}
+                                <button onClick={() => { setReturnProof(null); setActionModal({ isOpen:true, type:"return", req, note:"" }); }}
                                   style={{ padding:"5px 10px", border:"none", borderRadius:"6px", backgroundColor: over ? "#b91c1c" : "#3b82f6", color:"white", fontWeight:700, fontSize:"0.78rem", cursor:"pointer" }}>
                                   {over ? "🚨 รับคืนล่าช้า" : "📥 รับคืน"}
                                 </button>
@@ -559,6 +577,13 @@ export default function AdminBorrow() {
                 <label style={{ display:"block", marginBottom:"6px", fontWeight:600, fontSize:"0.9rem" }}>เหตุผลการปฏิเสธ</label>
                 <textarea rows={3} value={actionModal.note} onChange={e => setActionModal(p => ({...p, note: e.target.value}))}
                   placeholder="ระบุเหตุผล..." style={{ width:"100%", padding:"10px", borderRadius:"8px", border:"1px solid #e2e8f0", resize:"none" }} />
+              </div>
+            )}
+            {actionModal.type === "return" && (
+              <div style={{ marginBottom:"16px", padding:"12px", borderRadius:"10px", backgroundColor:"#f0fdf4" }}>
+                <label style={{ display:"block", marginBottom:"6px", fontWeight:600, fontSize:"0.9rem" }}>ภาพพัสดุที่รับคืน (ถ้ามี)</label>
+                <input type="file" accept=".png,.jpg,.jpeg,.webp" onChange={(e) => setReturnProof(e.target.files?.[0] ?? null)} style={{ width:"100%", fontSize:"0.8rem" }} />
+                {returnProof && <div style={{ marginTop:"5px", fontSize:"0.75rem", color:"#15803d" }}>เลือกแล้ว: {returnProof.name}</div>}
               </div>
             )}
             <div style={{ display:"flex", gap:"10px" }}>

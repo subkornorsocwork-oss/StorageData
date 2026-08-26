@@ -173,6 +173,9 @@ export default function StudentProfile() {
   const [isEditModalOpen, setIsEditModalOpen]     = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [selectedItem, setSelectedItem]           = useState<{ item: any; type: TabType } | null>(null);
+  const [returnProofBorrow, setReturnProofBorrow] = useState<any | null>(null);
+  const [returnProofFile, setReturnProofFile]     = useState<File | null>(null);
+  const [returnProofSaving, setReturnProofSaving] = useState(false);
   const [activeTab, setActiveTab]                 = useState<TabType>("booking");
   const [saveMsg, setSaveMsg]                     = useState("");
   const router = useRouter();
@@ -235,6 +238,29 @@ export default function StudentProfile() {
       setIsEditModalOpen(false);
       setSaveMsg("บันทึกข้อมูลสำเร็จ ✅");
       setTimeout(() => setSaveMsg(""), 3000);
+    }
+  };
+
+  const submitReturnProof = async () => {
+    if (!returnProofBorrow || !returnProofFile || !userId) return;
+    setReturnProofSaving(true);
+    try {
+      const ext = returnProofFile.name.split(".").pop() ?? "jpg";
+      const path = `${userId}/return-proof-${returnProofBorrow.id}-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from("documents").upload(path, returnProofFile);
+      if (uploadError) throw uploadError;
+      const url = supabase.storage.from("documents").getPublicUrl(path).data.publicUrl;
+      const { error } = await supabase.from("borrow_requests").update({ return_proof_url: url }).eq("id", returnProofBorrow.id).eq("user_id", userId);
+      if (error) throw error;
+      setBorrows((items) => items.map((item) => item.id === returnProofBorrow.id ? { ...item, return_proof_url: url } : item));
+      setReturnProofBorrow(null);
+      setReturnProofFile(null);
+      setSaveMsg("ส่งภาพแจ้งคืนสำเร็จ เจ้าหน้าที่จะตรวจรับและบันทึกวันเวลาคืนให้ครับ");
+      setTimeout(() => setSaveMsg(""), 4000);
+    } catch (error) {
+      setSaveMsg(`ส่งภาพแจ้งคืนไม่สำเร็จ: ${(error as Error).message}`);
+    } finally {
+      setReturnProofSaving(false);
     }
   };
 
@@ -327,6 +353,7 @@ export default function StudentProfile() {
                         statusColor={borrowStatusColor[b.status]}
                         statusText={borrowStatusText[b.status]}
                         onDetail={() => setSelectedItem({ item: b, type: "borrow" })} // ✅
+                        onReturnProof={b.status === "borrowing" && !b.return_proof_url ? () => setReturnProofBorrow(b) : undefined}
                       />
                     );
                   }))}
@@ -396,6 +423,20 @@ export default function StudentProfile() {
         <DetailModal item={selectedItem.item} type={selectedItem.type} onClose={() => setSelectedItem(null)} />
       )}
 
+      {returnProofBorrow && (
+        <div style={{ position:"fixed", inset:0, zIndex:10000, background:"rgba(15,23,42,0.55)", display:"flex", alignItems:"center", justifyContent:"center", padding:"16px" }}>
+          <div style={{ width:"100%", maxWidth:"420px", background:"white", borderRadius:"18px", padding:"22px" }}>
+            <h3 style={{ margin:"0 0 8px", color:"#1e293b" }}>📸 แจ้งคืนพัสดุ</h3>
+            <p style={{ margin:"0 0 16px", color:"#64748b", fontSize:"0.88rem" }}>แนบภาพพัสดุที่นำมาคืนเพื่อให้เจ้าหน้าที่ตรวจรับ วันและเวลาคืนจะบันทึกเมื่อเจ้าหน้าที่รับคืน</p>
+            <input type="file" accept=".png,.jpg,.jpeg,.webp" onChange={(e) => setReturnProofFile(e.target.files?.[0] ?? null)} style={{ width:"100%", marginBottom:"16px" }} />
+            <div style={{ display:"flex", gap:"10px" }}>
+              <button onClick={() => { setReturnProofBorrow(null); setReturnProofFile(null); }} style={{ flex:1, padding:"10px", borderRadius:"9px", border:"1px solid #e2e8f0", background:"white", cursor:"pointer" }}>ยกเลิก</button>
+              <button disabled={!returnProofFile || returnProofSaving} onClick={submitReturnProof} style={{ flex:1, padding:"10px", borderRadius:"9px", border:"none", background:!returnProofFile || returnProofSaving ? "#94a3b8" : "#800000", color:"white", cursor:!returnProofFile || returnProofSaving ? "not-allowed" : "pointer", fontWeight:700 }}>{returnProofSaving ? "กำลังส่ง..." : "ส่งภาพแจ้งคืน"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style dangerouslySetInnerHTML={{ __html: `
         @media (max-width: 900px) {
           .student-profile-grid {
@@ -442,9 +483,10 @@ export default function StudentProfile() {
 }
 
 // ── Sub-components ──
-function HistoryItem({ title, desc, statusColor, statusText, onDetail }: {
+function HistoryItem({ title, desc, statusColor, statusText, onDetail, onReturnProof }: {
   title: string; desc: string; statusColor: string; statusText: string;
-  onDetail: () => void; // ✅ เพิ่ม prop
+  onDetail: () => void;
+  onReturnProof?: () => void;
 }) {
   return (
     <div style={{ padding: "14px", borderRadius: "16px", border: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", minWidth: 0 }}>
@@ -456,6 +498,9 @@ function HistoryItem({ title, desc, statusColor, statusText, onDetail }: {
       <button onClick={onDetail} style={{ padding: "6px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: "0.8rem", cursor: "pointer", flexShrink: 0 }}>
         ดูรายละเอียด
       </button>
+      {onReturnProof && <button onClick={onReturnProof} style={{ padding: "6px 12px", borderRadius: "8px", border: "none", background: "#800000", color: "white", fontSize: "0.8rem", cursor: "pointer", flexShrink: 0 }}>
+        แจ้งคืนพร้อมภาพ
+      </button>}
     </div>
   );
 }

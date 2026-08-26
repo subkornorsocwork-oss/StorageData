@@ -35,6 +35,7 @@ const thaiDate  = (dateStr: string) => {
   const [y,m,d] = dateStr.split("-").map(Number);
   return `${d} ${THAI_MONTHS[m-1]} ${y+543}`;
 };
+const needsSoundDocument = (name: string) => /ลานกิจกรรม|พื้นที่ชั้น 1|ใต้ตึก|ช่องลม|SW SOCANT/i.test(name);
 
 function FileBox({ label, required, file, accept, inputId, onSelect }: {
   label: string; required?: boolean; file: File|null;
@@ -78,6 +79,7 @@ export default function StudentBooking() {
   const [bookerType,  setBookerType]  = useState<"student"|"organization">("student");
   const [orgName,     setOrgName]     = useState("");
   const [bookingForm, setBookingForm] = useState<File|null>(null);
+  const [usesSound, setUsesSound] = useState(false);
   const [studentCard, setStudentCard] = useState<File|null>(null);
   const [submitting,  setSubmitting]  = useState(false);
   const [modal, setModal] = useState<ModalState>({ isOpen:false, status:"loading", title:"", message:"" });
@@ -123,6 +125,10 @@ export default function StudentBooking() {
         setViewDate(next[0] ?? null);
         return next;
       } else {
+        if (prev.length >= 7) {
+          setModal({ isOpen:true, status:"error", title:"เลือกได้ไม่เกิน 7 วัน", message:"ตามระเบียบการใช้สถานที่ สามารถจองได้ครั้งละไม่เกิน 7 วันครับ" });
+          return prev;
+        }
         // เพิ่ม (ตรวจสอบป้องกันข้อมูลซ้ำ)
         setDayBookings(db => {
           if (db.some(x => x.date === dateStr)) return db;
@@ -176,10 +182,15 @@ export default function StudentBooking() {
 
     if (!purpose)
       return setModal({ isOpen:true, status:"error", title:"ข้อมูลไม่ครบ", message:"กรุณาระบุวัตถุประสงค์" });
-    if (!bookingForm)
-      return setModal({ isOpen:true, status:"error", title:"ไม่พบเอกสาร", message:"กรุณาแนบแบบฟอร์มขอใช้สถานที่" });
     if (!studentCard)
       return setModal({ isOpen:true, status:"error", title:"ไม่พบสำเนาบัตร", message:"กรุณาแนบสำเนาบัตรนักศึกษา" });
+    if (dayBookings.some((db) => {
+      const location = locations.find((item) => item.id === db.locationId);
+      return location && needsSoundDocument(location.name);
+    }) && !usesSound)
+      return setModal({ isOpen:true, status:"error", title:"สถานที่นี้ต้องใช้เสียง", message:"พื้นที่นี้ต้องเลือกว่าขอใช้เสียงและแนบเอกสารตามระเบียบครับ" });
+    if (usesSound && !bookingForm)
+      return setModal({ isOpen:true, status:"error", title:"ต้องแนบเอกสารขอใช้เสียง", message:"สถานที่นี้ต้องแนบเอกสารขอใช้เสียงตามระเบียบการใช้สถานที่ครับ" });
 
     setSubmitting(true);
     setModal({ isOpen:true, status:"loading", title:"กำลังส่งคำขอ...", message:`กำลังบันทึกการจอง ${selectedDates.length} วัน...` });
@@ -203,7 +214,7 @@ export default function StudentBooking() {
       // อัปโหลดเอกสาร (ใช้ร่วมกันทุกวัน)
       setModal({ isOpen:true, status:"loading", title:"กำลังอัปโหลดเอกสาร...", message:"กรุณารอสักครู่" });
       const [formUrl, cardUrl] = await Promise.all([
-        uploadOneFile(bookingForm, user.id, "booking-form"),
+        usesSound && bookingForm ? uploadOneFile(bookingForm, user.id, "sound-form") : Promise.resolve(null),
         uploadOneFile(studentCard, user.id, "student-card"),
       ]);
 
@@ -219,7 +230,7 @@ export default function StudentBooking() {
         attendees: db.attendees === "" ? null : Number(db.attendees),
         booker_type: bookerType,
         org_name: bookerType === "organization" ? orgName : null,
-        document_url: JSON.stringify({ bookingForm: formUrl, studentCard: cardUrl }),
+        document_url: JSON.stringify({ bookingForm: formUrl, soundForm: formUrl, studentCard: cardUrl }),
         status: "pending",
       }));
 
@@ -231,7 +242,7 @@ export default function StudentBooking() {
 
       // Reset ทุกอย่าง
       setSelectedDates([]); setDayBookings([]);
-      setPurpose(""); setOrgName(""); setBookingForm(null); setStudentCard(null);
+      setPurpose(""); setOrgName(""); setBookingForm(null); setUsesSound(false); setStudentCard(null);
       await loadMonthBookings(currentYear, currentMonth);
     } catch (err: any) {
       setModal({ isOpen:true, status:"error", title:"จองไม่สำเร็จ", message: err.message ?? "กรุณาลองใหม่" });
@@ -352,12 +363,16 @@ export default function StudentBooking() {
               <h4 style={{ margin:"0 0 8px", color:"#800000" }}>📄 ขั้นตอนการส่งเอกสาร</h4>
               <p style={{ fontSize:"0.85rem", color:"#64748b", margin:"0 0 15px", lineHeight:"1.6" }}>
                 1. ดาวน์โหลดแบบฟอร์มด้านล่าง<br/>
-                2. เซ็นชื่อผู้จองและอาจารย์ที่ปรึกษา<br/>
+                2. กรอกเอกสารขอใช้เสียง<br/>
                 3. แนบแบบฟอร์ม + สำเนาบัตรนักศึกษาในฟอร์มด้านขวา
               </p>
-              <a href="/forms/booking-form.pdf" download
+              <a href="/forms/sound-use-form.pdf" download
                 style={{ display:"flex", alignItems:"center", gap:"10px", padding:"12px 16px", backgroundColor:"#fdf2f2", color:"#800000", borderRadius:"12px", textDecoration:"none", fontWeight:600, fontSize:"0.9rem", border:"1px solid #fecaca" }}>
-                ⬇️ ดาวน์โหลดแบบฟอร์มการขอใช้สถานที่ (.PDF)
+                ⬇️ ดาวน์โหลดแบบฟอร์มเอกสารขอใช้เสียง (.PDF)
+              </a>
+              <a href="/forms/venue-rules.pdf" target="_blank" rel="noreferrer"
+                style={{ display:"flex", alignItems:"center", gap:"10px", padding:"12px 16px", backgroundColor:"#f8fafc", color:"#475569", borderRadius:"12px", textDecoration:"none", fontWeight:600, fontSize:"0.9rem", border:"1px solid #e2e8f0" }}>
+                📘 อ่านระเบียบการใช้สถานที่ฯ
               </a>
             </div>
           </section>
@@ -391,7 +406,12 @@ export default function StudentBooking() {
                         </div>
 
                         {/* สถานที่ */}
-                        <select value={db.locationId} onChange={e => updateDayBooking(db.date, "locationId", Number(e.target.value))}
+                        <select value={db.locationId} onChange={e => {
+                          const locationId = Number(e.target.value);
+                          updateDayBooking(db.date, "locationId", locationId);
+                          const location = locations.find((item) => item.id === locationId);
+                          if (location && needsSoundDocument(location.name)) setUsesSound(true);
+                        }}
                           style={{ width:"100%", padding:"10px", borderRadius:"10px", border:"1px solid #e2e8f0", backgroundColor:"white", marginBottom:"10px", boxSizing:"border-box" as const }}>
                           <option value="">เลือกสถานที่</option>
                           {locations.map(l => <option key={`loc-${db.date}-${l.id}`} value={l.id}>{l.name}{l.capacity?` • ความจุ ${l.capacity} คน`:""}</option>)}
@@ -451,8 +471,11 @@ export default function StudentBooking() {
 
               {/* เอกสาร */}
               <div style={{ backgroundColor:"#f8fafc", padding:"16px", borderRadius:"16px", border:"1px solid #e2e8f0", display:"flex", flexDirection:"column", gap:"12px" }}>
-                <p style={{ margin:0, fontSize:"0.85rem", color:"#475569", fontWeight:600 }}>📎 แนบเอกสารให้ครบ 2 รายการ (ใช้ร่วมทุกวัน)</p>
-                <FileBox label="แบบฟอร์มขอใช้สถานที่ (เซ็นชื่อแล้ว)" required file={bookingForm} accept=".pdf,.jpg,.jpeg,.png" inputId="bookingFormInput" onSelect={setBookingForm} />
+                <p style={{ margin:0, fontSize:"0.85rem", color:"#475569", fontWeight:600 }}>📎 สำเนาบัตรนักศึกษาต้องแนบทุกครั้ง และเอกสารขอใช้เสียงแนบเมื่อเลือกใช้เสียง</p>
+                <label style={{ display:"flex", alignItems:"center", gap:"8px", fontSize:"0.9rem", fontWeight:600, color:"#334155" }}>
+                  <input type="checkbox" checked={usesSound} onChange={(e) => setUsesSound(e.target.checked)} /> ขอใช้เครื่องขยายเสียง
+                </label>
+                {usesSound && <FileBox label="เอกสารขอใช้เสียง (เซ็นชื่อแล้ว)" required file={bookingForm} accept=".pdf,.jpg,.jpeg,.png" inputId="bookingFormInput" onSelect={setBookingForm} />}
                 <FileBox label="สำเนาบัตรนักศึกษา" required file={studentCard} accept=".pdf,.jpg,.jpeg,.png" inputId="studentCardInput" onSelect={setStudentCard} />
               </div>
 

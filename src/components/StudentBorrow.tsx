@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 // 🎯 1. สร้าง Interface กำหนดรูปแบบข้อมูลให้ชัดเจน (แก้ปัญหา Type Any แจ้งเตือน)
@@ -41,7 +40,7 @@ export default function StudentBorrow() {
   const [purpose, setPurpose] = useState("");
   
   // State สำหรับไฟล์แนบ
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [projectFile, setProjectFile] = useState<File | null>(null);
 
   // State สำหรับ Modal
   const [modalState, setModalState] = useState<{
@@ -131,18 +130,18 @@ export default function StudentBorrow() {
         throw new Error("ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
       }
 
-      let fileUrl = null;
+      let projectFileUrl: string | null = null;
 
-      if (selectedFile) {
-        const fileExt = selectedFile.name.split('.').pop();
+      if (projectFile) {
+        const fileExt = projectFile.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const filePath = `borrow-files/${fileName}`;
+        const filePath = `${user.id}/borrow-project-${fileName}`;
 
-        const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, selectedFile);
+        const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, projectFile);
         if (uploadError) throw new Error("อัปโหลดไฟล์ไม่สำเร็จ: " + uploadError.message);
 
         const { data: publicUrlData } = supabase.storage.from('documents').getPublicUrl(filePath);
-        fileUrl = publicUrlData.publicUrl;
+        projectFileUrl = publicUrlData.publicUrl;
       }
 
       const finalClubName = bookerType === 'club' 
@@ -153,7 +152,7 @@ export default function StudentBorrow() {
       const returnTimestamp = new Date(`${returnDate}T${returnTime}`).toISOString();
 
       // 🎯 2. ส่ง user_id เข้าไปบันทึกด้วย
-      const { error: insertError } = await supabase
+      const { data: request, error: insertError } = await supabase
         .from('borrow_requests')
         .insert({
           user_id: user.id,                  // 👈 เพิ่มบรรทัดนี้!
@@ -163,12 +162,22 @@ export default function StudentBorrow() {
           borrow_date: borrowTimestamp,      
           return_due_date: returnTimestamp,  
           purpose: purpose,
-          document_url: fileUrl,          
-          items: selectedItems,           
+          document_url: projectFileUrl,
           status: 'pending'
-        });
+        })
+        .select('id')
+        .single();
 
       if (insertError) throw insertError;
+
+      const { error: itemsError } = await supabase.from('borrow_items').insert(
+        selectedItems.map((item) => ({
+          borrow_request_id: request?.id,
+          equipment_id: item.id,
+          quantity: item.quantity,
+        })),
+      );
+      if (itemsError) throw itemsError;
 
       // ... โค้ด setModalState success และ clear form ด่านล่างเหมือนเดิม ...
 
@@ -179,7 +188,7 @@ export default function StudentBorrow() {
         message: `ส่งคำขอยืมอุปกรณ์เรียบร้อยแล้ว กรุณารอแอดมินอนุมัติผ่านระบบ` 
       });
       
-      setPhone(""); setBorrowDate(""); setBorrowTime(""); setReturnDate(""); setReturnTime(""); setPurpose(""); setSelectedClub(""); setCustomClub(""); setSelectedFile(null);
+      setPhone(""); setBorrowDate(""); setBorrowTime(""); setReturnDate(""); setReturnTime(""); setPurpose(""); setSelectedClub(""); setCustomClub(""); setProjectFile(null);
       fetchEquipments();
 
     } catch (error) {
@@ -254,21 +263,18 @@ export default function StudentBorrow() {
                  ยังไม่มีข้อมูลอุปกรณ์ในระบบ
                </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {equipment.map((item) => (
-                  <div key={item.id} style={{ backgroundColor: 'white', padding: '20px', borderRadius: '16px', border: item.quantity > 0 ? '2px solid #800000' : '1px solid #e2e8f0', boxShadow: '0 4px 6px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transition: '0.2s' }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '10px' }}>{item.emoji || '📦'}</div>
-                    <div style={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '5px' }}>{item.name}</div>
-                    
-                    <div style={{ fontSize: '0.85rem', color: item.available_qty > 0 ? '#10b981' : '#ef4444', marginBottom: '5px' }}>
+                  <div key={item.id} style={{ backgroundColor: 'white', padding: '12px 16px', borderRadius: '12px', border: item.quantity > 0 ? '2px solid #800000' : '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '12px', transition: '0.2s' }}>
+                    <div style={{ fontSize: '1.7rem', width: '42px', textAlign: 'center', flexShrink: 0 }}>{item.emoji || '📦'}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 'bold', color: '#1e293b', overflowWrap: 'anywhere' }}>{item.name}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>บาร์โค้ด: {item.barcode}</div>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: item.available_qty > 0 ? '#10b981' : '#ef4444', whiteSpace: 'nowrap' }}>
                       {item.available_qty > 0 ? `คงเหลือ: ${item.available_qty} ชิ้น` : 'ของหมด'}
                     </div>
-                    
-                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '15px' }}>
-                      บาร์โค้ด: {item.barcode}
-                    </div>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', backgroundColor: '#f1f5f9', padding: '5px', borderRadius: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '8px', flexShrink: 0 }}>
                       <button 
                         onClick={() => handleQuantityChange(item.id, -1)}
                         disabled={item.quantity === 0}
@@ -413,12 +419,12 @@ export default function StudentBorrow() {
                   <input 
                     type="file" 
                     accept=".pdf,.png,.jpg,.jpeg"
-                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    onChange={(e) => setProjectFile(e.target.files?.[0] || null)}
                     style={{ fontSize: '0.85rem', color: '#475569' }}
                   />
-                  {selectedFile && (
+                  {projectFile && (
                     <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 'bold' }}>
-                      ✓ เลือกไฟล์แล้ว: {selectedFile.name}
+                      ✓ เลือกไฟล์แล้ว: {projectFile.name}
                     </span>
                   )}
                 </div>

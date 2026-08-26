@@ -34,6 +34,7 @@ interface Location {
 
 interface BookingDocuments {
   bookingForm: string | null;
+  soundForm: string | null;
   studentCard: string | null;
 }
 
@@ -57,15 +58,16 @@ const parseBookingDocuments = (raw: string | null): BookingDocuments | null => {
   if (!raw) return null;
 
   try {
-    const parsed = JSON.parse(raw) as { bookingForm?: unknown; studentCard?: unknown };
+    const parsed = JSON.parse(raw) as { bookingForm?: unknown; soundForm?: unknown; studentCard?: unknown };
     if (parsed && typeof parsed === "object") {
       return {
         bookingForm: typeof parsed.bookingForm === "string" ? parsed.bookingForm : null,
+        soundForm: typeof parsed.soundForm === "string" ? parsed.soundForm : null,
         studentCard: typeof parsed.studentCard === "string" ? parsed.studentCard : null,
       };
     }
   } catch {
-    return { bookingForm: raw, studentCard: null };
+    return { bookingForm: raw, soundForm: null, studentCard: null };
   }
 
   return null;
@@ -264,8 +266,8 @@ export default function AdminBooking() {
     const documents = parseBookingDocuments(booking.document_url);
     if (!documents) return;
 
-    const firstUrl = documents.bookingForm || documents.studentCard || null;
-    const firstLabel = documents.bookingForm ? "แบบฟอร์มขอใช้สถานที่" : documents.studentCard ? "สำเนาบัตรนักศึกษา" : "";
+    const firstUrl = documents.bookingForm || documents.soundForm || documents.studentCard || null;
+    const firstLabel = documents.bookingForm ? "เอกสารขอใช้เสียง" : documents.soundForm ? "เอกสารขอใช้เสียง" : documents.studentCard ? "สำเนาบัตรนักศึกษา" : "";
 
     setDocumentModal({
       isOpen: true,
@@ -533,10 +535,18 @@ export default function AdminBooking() {
             <div style={{ padding: "16px 24px", borderBottom: "1px solid #f1f5f9", display: "flex", gap: "10px", flexWrap: "wrap" }}>
               {documentModal.documents.bookingForm && (
                 <button
-                  onClick={() => setDocumentModal(prev => ({ ...prev, activeUrl: prev.documents?.bookingForm ?? null, activeLabel: "แบบฟอร์มขอใช้สถานที่" }))}
-                  style={{ padding: "9px 14px", borderRadius: "10px", border: "none", cursor: "pointer", fontWeight: 700, backgroundColor: documentModal.activeLabel === "แบบฟอร์มขอใช้สถานที่" ? "#800000" : "#f1f5f9", color: documentModal.activeLabel === "แบบฟอร์มขอใช้สถานที่" ? "white" : "#475569" }}
+                  onClick={() => setDocumentModal(prev => ({ ...prev, activeUrl: prev.documents?.bookingForm ?? null, activeLabel: "เอกสารขอใช้เสียง" }))}
+                  style={{ padding: "9px 14px", borderRadius: "10px", border: "none", cursor: "pointer", fontWeight: 700, backgroundColor: documentModal.activeLabel === "เอกสารขอใช้เสียง" ? "#800000" : "#f1f5f9", color: documentModal.activeLabel === "เอกสารขอใช้เสียง" ? "white" : "#475569" }}
                 >
-                  แบบฟอร์มขอใช้สถานที่
+                  เอกสารขอใช้เสียง
+                </button>
+              )}
+              {documentModal.documents.soundForm && !documentModal.documents.bookingForm && (
+                <button
+                  onClick={() => setDocumentModal(prev => ({ ...prev, activeUrl: prev.documents?.soundForm ?? null, activeLabel: "เอกสารขอใช้เสียง" }))}
+                  style={{ padding: "9px 14px", borderRadius: "10px", border: "none", cursor: "pointer", fontWeight: 700, backgroundColor: documentModal.activeLabel === "เอกสารขอใช้เสียง" ? "#800000" : "#f1f5f9", color: documentModal.activeLabel === "เอกสารขอใช้เสียง" ? "white" : "#475569" }}
+                >
+                  เอกสารขอใช้เสียง
                 </button>
               )}
               {documentModal.documents.studentCard && (
