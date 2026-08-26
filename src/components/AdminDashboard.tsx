@@ -35,7 +35,7 @@ export default function AdminDashboard() {
       const { count: overdueCount, error: e2 } = await supabase
         .from("borrow_requests")
         .select("*", { count: "exact", head: true })
-        .eq("status", "approved")
+        .in("status", ["approved", "borrowing"])
         .is("actual_return", null)
         .lt("return_due_date", today);
       if (e2) console.error("❌ borrow_requests:", e2.message);
@@ -54,13 +54,25 @@ export default function AdminDashboard() {
         .gte("created_at", startOfMonth.toISOString());
       if (e4) console.error("❌ lost_and_found:", e4.message);
 
-      const { data: bookingsData, error: e5 } = await supabase
+      // Query bookings and profiles separately. The embedded profiles relation is
+      // not guaranteed to exist in every deployed schema and made all charts empty.
+      const { data: bookingRows, error: e5 } = await supabase
         .from("bookings")
-        .select(`id, created_at, status, location, org_name, user_id, profiles ( full_name, faculty )`)
+        .select("id, created_at, status, location, org_name, user_id")
         .order("created_at", { ascending: false });
       if (e5) console.error("❌ bookings list:", e5.message);
-      if (bookingsData) {
-        const pendingRows = bookingsData.filter((b: any) => b.status === "pending").slice(0, 5);
+      if (bookingRows) {
+        const bookingUserIds = Array.from(new Set(bookingRows.map((booking) => booking.user_id).filter(Boolean)));
+        const { data: bookingProfiles, error: profileJoinError } = bookingUserIds.length > 0
+          ? await supabase.from("profiles").select("id, full_name, faculty").in("id", bookingUserIds)
+          : { data: [], error: null };
+        if (profileJoinError) console.error("❌ booking profiles:", profileJoinError.message);
+        const profilesById = new Map((bookingProfiles ?? []).map((row) => [row.id, row]));
+        const bookingsData = bookingRows.map((booking) => ({
+          ...booking,
+          profiles: profilesById.get(booking.user_id) ?? null,
+        }));
+        const pendingRows = bookingsData.filter((b) => b.status === "pending").slice(0, 5);
         setPendingList(pendingRows);
 
         const statusCounts: Record<string, number> = {};
@@ -68,7 +80,7 @@ export default function AdminDashboard() {
         const orgCounts: Record<string, number> = {};
         const facultyCounts: Record<string, number> = {};
 
-        bookingsData.forEach((b: any) => {
+        bookingsData.forEach((b) => {
           statusCounts[b.status ?? "unknown"] = (statusCounts[b.status ?? "unknown"] || 0) + 1;
           const userName = b.profiles?.full_name || "ไม่ระบุชื่อ";
           userCounts[userName] = (userCounts[userName] || 0) + 1;
@@ -123,8 +135,9 @@ export default function AdminDashboard() {
       if (e7) console.error("❌ borrow_items:", e7.message);
       if (borrowItemsData) {
         const counts: Record<string, number> = {};
-        borrowItemsData.forEach((b: any) => {
-          const name = b.equipment?.name;
+        borrowItemsData.forEach((b) => {
+          const equipment = Array.isArray(b.equipment) ? b.equipment[0] : b.equipment;
+          const name = equipment?.name;
           if (name) counts[name] = (counts[name] || 0) + (b.quantity || 1);
         });
         setItemStats(

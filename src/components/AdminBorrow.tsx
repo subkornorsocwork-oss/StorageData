@@ -34,6 +34,7 @@ interface BorrowRequest {
   return_proof_url?: string | null;
   user_name?: string;
   student_id?: string;
+  user_phone?: string;
   borrow_items?: { quantity: number; equipment: { name: string; emoji: string | null } }[];
 }
 
@@ -41,6 +42,7 @@ interface ProfileRow {
   id: string;
   full_name: string | null;
   student_id: string | null;
+  phone: string | null;
 }
 
 interface BorrowItemRow {
@@ -75,6 +77,12 @@ const STATUS_LABEL: Record<string, string> = {
 
 const isPreviewableImage = (url: string) => /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(url);
 const isPreviewablePdf = (url: string) => /\.pdf(\?|$)/i.test(url);
+const compareBarcodes = (a: Equipment, b: Equipment) => {
+  if (!a.barcode && !b.barcode) return a.id - b.id;
+  if (!a.barcode) return 1;
+  if (!b.barcode) return -1;
+  return a.barcode.localeCompare(b.barcode, undefined, { numeric: true, sensitivity: "base" });
+};
 
 export default function AdminBorrow() {
   const { profile } = useRole();
@@ -139,7 +147,7 @@ export default function AdminBorrow() {
 
     const [profilesResult, itemsResult] = await Promise.allSettled([
       userIds.length > 0
-        ? supabase.from("profiles").select("id, full_name, student_id").in("id", userIds)
+        ? supabase.from("profiles").select("id, full_name, student_id, phone").in("id", userIds)
         : Promise.resolve({ data: [], error: null }),
       requestIds.length > 0
         ? supabase
@@ -191,13 +199,32 @@ export default function AdminBorrow() {
       itemsByRequestId.set(item.borrow_request_id, currentItems);
     }
 
+    // Keep older requests visible when their selected items were stored as legacy JSON.
+    const legacyItemsByRequestId = new Map<number, NonNullable<BorrowRequest["borrow_items"]>>();
+    for (const request of baseRequests) {
+      const rawItems = (request as BorrowRequest & { items?: unknown }).items;
+      if (itemsByRequestId.has(request.id) || !Array.isArray(rawItems)) continue;
+      const legacyItems = rawItems.flatMap((raw) => {
+        if (!raw || typeof raw !== "object") return [];
+        const item = raw as { name?: unknown; emoji?: unknown; quantity?: unknown; equipment?: { name?: unknown; emoji?: unknown } };
+        const equipment = item.equipment ?? item;
+        if (typeof equipment.name !== "string") return [];
+        return [{
+          quantity: Number(item.quantity) > 0 ? Number(item.quantity) : 1,
+          equipment: { name: equipment.name, emoji: typeof equipment.emoji === "string" ? equipment.emoji : null },
+        }];
+      });
+      if (legacyItems.length > 0) legacyItemsByRequestId.set(request.id, legacyItems);
+    }
+
     const mapped = baseRequests.map((request) => {
       const profileRow = profileById.get(request.user_id);
       return {
         ...request,
         user_name: profileRow?.full_name ?? "-",
         student_id: profileRow?.student_id ?? "-",
-        borrow_items: itemsByRequestId.get(request.id) ?? [],
+        user_phone: profileRow?.phone ?? "-",
+        borrow_items: itemsByRequestId.get(request.id) ?? legacyItemsByRequestId.get(request.id) ?? [],
       };
     });
 
@@ -207,8 +234,8 @@ export default function AdminBorrow() {
 
   const loadEquipments = useCallback(async () => {
     setLoadingEq(true);
-    const { data } = await supabase.from("equipment").select("*").order("name");
-    setEquipments(data ?? []);
+    const { data } = await supabase.from("equipment").select("*").order("barcode", { ascending: true, nullsFirst: false });
+    setEquipments([...(data ?? [])].sort(compareBarcodes));
     setLoadingEq(false);
   }, []);
 
@@ -398,10 +425,10 @@ export default function AdminBorrow() {
               <div style={{ padding:"60px", textAlign:"center", color:"#94a3b8" }}>ไม่พบรายการ</div>
             ) : (
               <div style={{ overflowX:"auto" }}>
-                <table style={{ width:"100%", borderCollapse:"collapse", minWidth:"800px" }}>
+                <table style={{ width:"100%", borderCollapse:"collapse", minWidth:"1120px" }}>
                   <thead>
                     <tr style={{ backgroundColor:"#f8fafc", borderBottom:"2px solid #800000" }}>
-                      {["วันที่ยืม","กำหนดคืน","ผู้ยืม / ทะเบียน / โทรศัพท์","อุปกรณ์","เอกสาร / ภาพคืน","สถานะ","จัดการ"].map(h => (
+                      {["วันที่ยืม","กำหนดคืน","ผู้ยืม","เลขทะเบียน","เบอร์โทรศัพท์","อุปกรณ์","เอกสาร / ภาพคืน","สถานะ","จัดการ"].map(h => (
                         <th key={h} style={{ padding:"12px 14px", textAlign:"left", fontSize:"0.82rem", fontWeight:700, color:"#64748b" }}>{h}</th>
                       ))}
                     </tr>
@@ -417,10 +444,10 @@ export default function AdminBorrow() {
                           <td style={{ padding:"12px 14px", fontSize:"0.85rem", color: over ? "#b91c1c" : "#ef4444", fontWeight:600 }}>{fmtDateTime(req.return_due_date)}</td>
                           <td style={{ padding:"12px 14px" }}>
                             <div style={{ fontWeight:600, fontSize:"0.875rem" }}>{req.user_name}</div>
-                            <div style={{ fontSize:"0.75rem", color:"#475569" }}>ทะเบียน: {req.student_id ?? "-"}</div>
-                            <div style={{ fontSize:"0.75rem", color:"#94a3b8" }}>โทร: {req.phone ?? "-"}</div>
                             <div style={{ fontSize:"0.7rem", color:"#94a3b8" }}>ยื่นเมื่อ: {fmtDateTime(req.created_at)}</div>
                           </td>
+                          <td style={{ padding:"12px 14px", fontSize:"0.82rem", color:"#475569" }}>{req.student_id ?? "-"}</td>
+                          <td style={{ padding:"12px 14px", fontSize:"0.82rem", color:"#475569" }}>{req.user_phone ?? "-"}</td>
                           <td style={{ padding:"12px 14px", fontSize:"0.82rem", color:"#475569" }}>{items}</td>
                           <td style={{ padding:"12px 14px" }}>
                             {documentUrl || req.return_proof_url
@@ -502,6 +529,12 @@ export default function AdminBorrow() {
                 <label style={{ display:"block", fontSize:"0.8rem", fontWeight:600, marginBottom:"4px" }}>จำนวนทั้งหมด *</label>
                 <input type="number" min={1} value={eqForm.total_qty} onChange={e => setEqForm(p => ({...p, total_qty: Number(e.target.value)}))}
                   style={{ width:"100%", padding:"9px", borderRadius:"8px", border:"1px solid #e2e8f0", boxSizing:"border-box" as const }} />
+              </div>
+              <div style={{ gridColumn:"1 / -1" }}>
+                <label style={{ display:"block", fontSize:"0.8rem", fontWeight:600, marginBottom:"4px" }}>รายละเอียดพัสดุ</label>
+                <textarea value={eqForm.description} onChange={e => setEqForm(p => ({...p, description: e.target.value}))}
+                  placeholder="รายละเอียดหรือเงื่อนไขการใช้งาน (ถ้ามี)" rows={3}
+                  style={{ width:"100%", padding:"9px", borderRadius:"8px", border:"1px solid #e2e8f0", boxSizing:"border-box", resize:"vertical" }} />
               </div>
               <button onClick={handleSaveEq} style={{ padding:"9px 18px", backgroundColor:"#10b981", color:"white", border:"none", borderRadius:"8px", fontWeight:"bold", cursor:"pointer" }}>บันทึก</button>
             </div>
