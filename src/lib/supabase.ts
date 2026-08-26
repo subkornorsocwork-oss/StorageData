@@ -4,6 +4,24 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? "";
 
 const missingConfigMessage = "Supabase configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.";
+const NETWORK_TIMEOUT_MS = 12000;
+
+// Supabase requests otherwise wait indefinitely when a network, DNS, or
+// browser connection stalls. A shared timeout keeps every page recoverable.
+const fetchWithTimeout: typeof fetch = async (input, init) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), NETWORK_TIMEOUT_MS);
+  const upstreamSignal = init?.signal;
+  const abortFromCaller = () => controller.abort();
+  upstreamSignal?.addEventListener("abort", abortFromCaller, { once: true });
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+    upstreamSignal?.removeEventListener("abort", abortFromCaller);
+  }
+};
 
 const createMissingResult = async () => ({ data: null, error: new Error(missingConfigMessage) });
 
@@ -67,6 +85,7 @@ function getSupabaseClient(): SupabaseClient {
     }
 
     supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { fetch: fetchWithTimeout },
       auth: {
         persistSession: true,
         storageKey: 'sb-auth-token',

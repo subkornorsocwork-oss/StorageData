@@ -68,12 +68,17 @@ function clearCachedProfile() {
 }
 
 async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 10000): Promise<T> {
-  return await Promise.race([
-    promise,
-    new Promise<T>((_, reject) => {
-      setTimeout(() => reject(new Error("profile load timeout")), timeoutMs);
-    }),
-  ]);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("profile load timeout")), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 export function RoleProvider({ children }: { children: ReactNode }) {
@@ -104,7 +109,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       try {
         const {
           data: { session },
-        } = await supabase.auth.getSession();
+        } = await withTimeout(supabase.auth.getSession(), 8000);
 
         if (session?.user) {
           const cachedProfile = readCachedProfile(session.user.id);
