@@ -131,7 +131,11 @@ export default function AdminBooking() {
 
   const loadBookings = useCallback(async () => {
     setLoadingBookings(true);
-    const { data, error } = await supabase.from("v_bookings_detail").select("*").order("created_at", { ascending: false });
+    const result = await Promise.race([
+      supabase.from("v_bookings_detail").select("*").order("created_at", { ascending: false }),
+      new Promise<{ data: null; error: Error }>((resolve) => window.setTimeout(() => resolve({ data: null, error: new Error("โหลดข้อมูลการจองใช้เวลานานเกินไป") }), 8500)),
+    ]);
+    const { data, error } = result;
     if (error) {
       console.error("loadBookings error:", error);
       setAllBookings([]);
@@ -150,8 +154,11 @@ export default function AdminBooking() {
 
   const loadLocations = useCallback(async () => {
     setLoadingLoc(true);
-    const { data } = await supabase.from("locations").select("id, name, location_type, capacity, is_active").order("name");
-    setLocations(data ?? []);
+    const result = await Promise.race([
+      supabase.from("locations").select("id, name, location_type, capacity, is_active").order("name"),
+      new Promise<{ data: null; error: Error }>((resolve) => window.setTimeout(() => resolve({ data: null, error: new Error("โหลดข้อมูลสถานที่ใช้เวลานานเกินไป") }), 8500)),
+    ]);
+    if (!result.error) setLocations(result.data ?? []);
     setLoadingLoc(false);
   }, []);
 

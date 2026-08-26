@@ -4,7 +4,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? "";
 
 const missingConfigMessage = "Supabase configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.";
-const NETWORK_TIMEOUT_MS = 12000;
+const NETWORK_TIMEOUT_MS = 8000;
 
 // Supabase requests otherwise wait indefinitely when a network, DNS, or
 // browser connection stalls. A shared timeout keeps every page recoverable.

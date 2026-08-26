@@ -21,6 +21,13 @@ export default function AdminDashboard() {
   const [bookingStatusStats, setBookingStatusStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const deadline = window.setTimeout(() => {
+      setLoading(false);
+    }, 12000);
+    return () => window.clearTimeout(deadline);
+  }, []);
+
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
