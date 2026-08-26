@@ -55,23 +55,27 @@ export default function StudentHome() {
   const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bannerLoading, setBannerLoading] = useState(true);
+  const [bannerError, setBannerError] = useState("");
 
   useEffect(() => {
     const fetchBanners = async () => {
-      const { data, error } = await supabase
-        .from("banners")
-        .select("id, image_url")
-        .eq("is_active", true)
-        .order("updated_at", { ascending: false, nullsFirst: false })
-        .order("id", { ascending: false });
-
-      if (error) {
+      try {
+        const { data, error } = await supabase
+          .from("banners")
+          .select("id, image_url")
+          .eq("is_active", true)
+          .order("updated_at", { ascending: false, nullsFirst: false })
+          .order("id", { ascending: false });
+        if (error) throw error;
+        setBanners((data as Banner[] | null) ?? []);
+        setCurrentSlide(0);
+      } catch (error) {
         console.error("โหลดแบนเนอร์ไม่สำเร็จ:", error);
-        return;
+        setBannerError("ไม่สามารถโหลดแบนเนอร์ได้");
+      } finally {
+        setBannerLoading(false);
       }
-
-      setBanners((data as Banner[] | null) ?? []);
-      setCurrentSlide(0);
     };
 
     void fetchBanners();
@@ -88,6 +92,7 @@ export default function StudentHome() {
   }, [banners.length]);
 
   useEffect(() => {
+    const deadline = window.setTimeout(() => setLoading(false), 9000);
     const fetchData = async () => {
       setLoading(true);
 
@@ -135,6 +140,7 @@ export default function StudentHome() {
     };
 
     void fetchData();
+    return () => window.clearTimeout(deadline);
   }, []);
 
   return (
@@ -192,7 +198,7 @@ export default function StudentHome() {
                 color: "white",
               }}
             >
-              ไม่มีรูปแบนเนอร์ หรือกำลังโหลด...
+              {bannerLoading ? "กำลังโหลดแบนเนอร์..." : bannerError || "ยังไม่มีรูปแบนเนอร์"}
             </div>
           )}
 
