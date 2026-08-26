@@ -23,6 +23,7 @@ export default function AdminProfile() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [editPhone, setEditPhone] = useState("");
   const [editDepartment, setEditDepartment] = useState("");
+  const [activityLogs, setActivityLogs] = useState<{ id: string; action: string; date: string; time: string }[]>([]);
 
   useEffect(() => {
     if (!profile) return;
@@ -39,6 +40,38 @@ export default function AdminProfile() {
     setAdminInfo(nextInfo);
     setEditPhone(profile.phone || "");
     setEditDepartment(profile.department || "");
+
+    const loadActivityLogs = async () => {
+      const [announcementResult, bookingResult, borrowResult] = await Promise.all([
+        supabase.from("announcements").select("id, title, created_at").order("created_at", { ascending: false }).limit(10),
+        supabase.from("bookings").select("id, status, created_at").order("created_at", { ascending: false }).limit(10),
+        supabase.from("borrow_requests").select("id, status, created_at").order("created_at", { ascending: false }).limit(10),
+      ]);
+
+      const formatLog = (id: string, action: string, createdAt: string) => {
+        const date = new Date(createdAt);
+        return {
+          id,
+          action,
+          date: date.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }),
+          time: `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")} น.`,
+          timestamp: date.getTime(),
+        };
+      };
+
+      const logs = [
+        ...(announcementResult.data ?? []).map((item) => formatLog(`announcement-${item.id}`, `ประกาศ: ${item.title}`, item.created_at)),
+        ...(bookingResult.data ?? []).map((item) => formatLog(`booking-${item.id}`, `คำขอจองสถานที่ (${item.status ?? "ไม่ระบุสถานะ"})`, item.created_at)),
+        ...(borrowResult.data ?? []).map((item) => formatLog(`borrow-${item.id}`, `คำขอยืมพัสดุ (${item.status ?? "ไม่ระบุสถานะ"})`, item.created_at)),
+      ]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 10)
+        .map(({ timestamp: _timestamp, ...log }) => log);
+
+      setActivityLogs(logs);
+    };
+
+    void loadActivityLogs();
   }, [profile, fullName]);
 
   const handleSaveChanges = async () => {
@@ -108,11 +141,6 @@ export default function AdminProfile() {
       </div>
     );
   }
-
-  const activityLogs = [
-    { id: 1, action: "เพิ่มประกาศใหม่: แจ้งปิดปรับปรุงระบบ", date: "14 เม.ย. 2026", time: "10:30 น." },
-    { id: 2, action: "อนุมัติการจองสถานที่: ลานกิจกรรม", date: "13 เม.ย. 2026", time: "15:45 น." },
-  ];
 
   return (
     <div style={{ padding: "40px", maxWidth: "900px", margin: "0 auto" }}>
@@ -208,7 +236,9 @@ export default function AdminProfile() {
           <div style={{ backgroundColor: "white", padding: "25px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
             <h3 style={{ margin: "0 0 20px 0", color: "#1e293b", borderBottom: "2px solid #f1f5f9", paddingBottom: "10px" }}>⏱️ ประวัติการทำรายการล่าสุด</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-              {activityLogs.map((log) => (
+              {activityLogs.length === 0 ? (
+                <p style={{ margin: 0, color: "#94a3b8" }}>ยังไม่มีรายการล่าสุด</p>
+              ) : activityLogs.map((log) => (
                 <div key={log.id} style={{ display: "flex", gap: "15px", alignItems: "flex-start", borderBottom: "1px solid #f8fafc", paddingBottom: "10px" }}>
                   <div style={{ backgroundColor: "#fef2f2", color: "#800000", padding: "8px", borderRadius: "50%", fontSize: "0.8rem" }}>⚡</div>
                   <div>

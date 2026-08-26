@@ -4,6 +4,11 @@
 alter table public.borrow_items enable row level security;
 alter table public.borrow_requests enable row level security;
 
+-- Keep the return flow compatible with databases created before return proof
+-- was added to the application.
+alter table public.borrow_requests
+  add column if not exists return_proof_url text null;
+
 -- The item INSERT policy checks its parent request with EXISTS. PostgreSQL
 -- applies RLS inside that subquery too, so the owner must be able to read
 -- their own request for the check to evaluate to true.
