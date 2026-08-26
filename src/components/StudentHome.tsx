@@ -57,6 +57,7 @@ export default function StudentHome() {
   const [loading, setLoading] = useState(true);
   const [bannerLoading, setBannerLoading] = useState(true);
   const [bannerError, setBannerError] = useState("");
+  const [contentError, setContentError] = useState("");
 
   useEffect(() => {
     const fetchBanners = async () => {
@@ -65,7 +66,6 @@ export default function StudentHome() {
           .from("banners")
           .select("id, image_url")
           .eq("is_active", true)
-          .order("updated_at", { ascending: false, nullsFirst: false })
           .order("id", { ascending: false });
         if (error) throw error;
         setBanners((data as Banner[] | null) ?? []);
@@ -95,38 +95,39 @@ export default function StudentHome() {
     const deadline = window.setTimeout(() => setLoading(false), 9000);
     const fetchData = async () => {
       setLoading(true);
+      setContentError("");
 
       try {
-        const { data: annData, error: annError } = await supabase
-          .from("announcements")
-          .select("id, title, created_at")
-          .eq("post_type", "announcement")
-          .eq("is_active", true)
-          .order("created_at", { ascending: false })
-          .limit(8);
+        const [announcementResult, eventResult] = await Promise.all([
+          supabase
+            .from("announcements")
+            .select("id, title, created_at")
+            .eq("post_type", "announcement")
+            .eq("is_active", true)
+            .order("created_at", { ascending: false })
+            .limit(8),
+          supabase
+            .from("announcements")
+            .select("id, title, event_date, created_at")
+            .eq("post_type", "event")
+            .eq("is_active", true)
+            .order("event_date", { ascending: true })
+            .limit(5),
+        ]);
 
-        if (annError) throw annError;
+        if (announcementResult.error) throw announcementResult.error;
+        if (eventResult.error) throw eventResult.error;
 
         setAnnouncements(
-          (annData ?? []).map((item) => ({
+          (announcementResult.data ?? []).map((item) => ({
             id: item.id,
             date: formatThaiDate(item.created_at),
             title: item.title,
           })),
         );
 
-        const { data: eventData, error: eventError } = await supabase
-          .from("announcements")
-          .select("id, title, event_date, created_at")
-          .eq("post_type", "event")
-          .eq("is_active", true)
-          .order("event_date", { ascending: true })
-          .limit(5);
-
-        if (eventError) throw eventError;
-
         setEvents(
-          (eventData ?? []).map((item) => ({
+          (eventResult.data ?? []).map((item) => ({
             id: item.id,
             ...splitThaiDate(item.event_date ?? item.created_at),
             title: item.title,
@@ -134,6 +135,7 @@ export default function StudentHome() {
         );
       } catch (error) {
         console.error("โหลดข้อมูลหน้าแรกไม่สำเร็จ:", error);
+        setContentError("ไม่สามารถโหลดข้อมูลจากฐานข้อมูลได้");
       } finally {
         setLoading(false);
       }
@@ -257,6 +259,8 @@ export default function StudentHome() {
             <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
               {loading ? (
                 <p style={{ color: "#94a3b8", fontSize: "0.95rem" }}>กำลังโหลด...</p>
+              ) : contentError ? (
+                <p style={{ color: "#dc2626", fontSize: "0.95rem" }}>{contentError}</p>
               ) : announcements.length === 0 ? (
                 <p style={{ color: "#64748b", fontSize: "0.95rem" }}>ยังไม่มีประกาศในขณะนี้</p>
               ) : (
@@ -315,6 +319,8 @@ export default function StudentHome() {
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               {loading ? (
                 <p style={{ color: "#94a3b8", fontSize: "0.95rem" }}>กำลังโหลด...</p>
+              ) : contentError ? (
+                <p style={{ color: "#dc2626", fontSize: "0.95rem" }}>{contentError}</p>
               ) : events.length === 0 ? (
                 <p style={{ color: "#64748b", fontSize: "0.95rem" }}>ยังไม่มีกิจกรรม</p>
               ) : (
