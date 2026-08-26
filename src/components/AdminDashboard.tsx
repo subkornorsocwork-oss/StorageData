@@ -25,53 +25,14 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
 
-      const { count: pendingCount, error: e1 } = await supabase
-        .from("bookings")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-      if (e1) console.error("❌ bookings:", e1.message);
-
-      const today = new Date().toISOString();
-      const { count: overdueCount, error: e2 } = await supabase
-        .from("borrow_requests")
-        .select("*", { count: "exact", head: true })
-        .in("status", ["approved", "borrowing"])
-        .is("actual_return", null)
-        .lt("return_due_date", today);
-      if (e2) console.error("❌ borrow_requests:", e2.message);
-
-      const { count: userCount, error: e3 } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true });
-      if (e3) console.error("❌ profiles count:", e3.message);
-
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      const { count: lostCount, error: e4 } = await supabase
-        .from("lost_and_found")
-        .select("*", { count: "exact", head: true })
-        .gte("created_at", startOfMonth.toISOString());
-      if (e4) console.error("❌ lost_and_found:", e4.message);
-
-      // Query bookings and profiles separately. The embedded profiles relation is
-      // not guaranteed to exist in every deployed schema and made all charts empty.
-      const { data: bookingRows, error: e5 } = await supabase
-        .from("bookings")
-        .select("id, created_at, status, location, org_name, user_id")
+      // Reuse the same detail view as the admin booking page so dashboard data
+      // follows the deployed schema and includes resolved user/location fields.
+      const { data: bookingsData, error: e5 } = await supabase
+        .from("v_bookings_detail")
+        .select("*")
         .order("created_at", { ascending: false });
       if (e5) console.error("❌ bookings list:", e5.message);
-      if (bookingRows) {
-        const bookingUserIds = Array.from(new Set(bookingRows.map((booking) => booking.user_id).filter(Boolean)));
-        const { data: bookingProfiles, error: profileJoinError } = bookingUserIds.length > 0
-          ? await supabase.from("profiles").select("id, full_name, faculty").in("id", bookingUserIds)
-          : { data: [], error: null };
-        if (profileJoinError) console.error("❌ booking profiles:", profileJoinError.message);
-        const profilesById = new Map((bookingProfiles ?? []).map((row) => [row.id, row]));
-        const bookingsData = bookingRows.map((booking) => ({
-          ...booking,
-          profiles: profilesById.get(booking.user_id) ?? null,
-        }));
+      if (bookingsData) {
         const pendingRows = bookingsData.filter((b) => b.status === "pending").slice(0, 5);
         setPendingList(pendingRows);
 
@@ -82,13 +43,14 @@ export default function AdminDashboard() {
 
         bookingsData.forEach((b) => {
           statusCounts[b.status ?? "unknown"] = (statusCounts[b.status ?? "unknown"] || 0) + 1;
-          const userName = b.profiles?.full_name || "ไม่ระบุชื่อ";
+          const userName = b.user_name || b.profiles?.full_name || "ไม่ระบุชื่อ";
           userCounts[userName] = (userCounts[userName] || 0) + 1;
           if (b.org_name) {
             orgCounts[b.org_name] = (orgCounts[b.org_name] || 0) + 1;
           }
-          if (b.profiles?.faculty) {
-            facultyCounts[b.profiles.faculty] = (facultyCounts[b.profiles.faculty] || 0) + 1;
+          if (b.user_faculty || b.profiles?.faculty) {
+            const faculty = b.user_faculty || b.profiles.faculty;
+            facultyCounts[faculty] = (facultyCounts[faculty] || 0) + 1;
           }
         });
 
@@ -148,8 +110,18 @@ export default function AdminDashboard() {
         );
       }
 
+      const today = new Date().toISOString();
+      const [{ count: overdueCount, error: e2 }, { count: userCount, error: e3 }, { count: lostCount, error: e4 }] = await Promise.all([
+        supabase.from("borrow_requests").select("id", { count: "exact", head: true }).in("status", ["approved", "borrowing"]).is("actual_return", null).lt("return_due_date", today),
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("lost_and_found").select("id", { count: "exact", head: true }).gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
+      ]);
+      if (e2) console.error("❌ borrow_requests:", e2.message);
+      if (e3) console.error("❌ profiles count:", e3.message);
+      if (e4) console.error("❌ lost_and_found:", e4.message);
+
       setStats({
-        pendingBookings: pendingCount || 0,
+        pendingBookings: bookingsData?.filter((booking) => booking.status === "pending").length || 0,
         overdueItems: overdueCount || 0,
         totalUsers: userCount || 0,
         lostItems: lostCount || 0
@@ -299,8 +271,8 @@ export default function AdminDashboard() {
               pendingList.map((item) => (
                 <tr key={item.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                   <td style={{ padding: "15px" }}>{new Date(item.created_at).toLocaleDateString('th-TH')}</td>
-                  <td style={{ padding: "15px", fontWeight: "bold" }}>{item.location}</td>
-                  <td style={{ padding: "15px" }}>{item.profiles?.full_name || "ไม่ระบุชื่อ"}</td>
+                  <td style={{ padding: "15px", fontWeight: "bold" }}>{item.location_name || item.location || "-"}</td>
+                  <td style={{ padding: "15px" }}>{item.user_name || item.profiles?.full_name || "ไม่ระบุชื่อ"}</td>
                   <td style={{ padding: "15px", display: "flex", gap: "10px" }}>
                     <button onClick={() => handleUpdateStatus(item.id, 'approved')} style={{ backgroundColor: "#10b981", color: "white", border: "none", padding: "8px 15px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>✅ อนุมัติ</button>
                     <button onClick={() => handleUpdateStatus(item.id, 'rejected')} style={{ backgroundColor: "#ef4444", color: "white", border: "none", padding: "8px 15px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>❌ ปฏิเสธ</button>
