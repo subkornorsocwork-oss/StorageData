@@ -29,7 +29,7 @@ export default function StudentBorrow() {
   const [loading, setLoading] = useState(true);
 
   // State สำหรับฟอร์มและบาร์โค้ด
-  const [bookerType, setBookerType] = useState<"student" | "club">("student");
+  const [bookerType, setBookerType] = useState<"student" | "organization">("student");
   const [selectedClub, setSelectedClub] = useState<string>("");
   const [organizations, setOrganizations] = useState<string[]>(fallbackClubs.filter((club) => club !== "อื่นๆ (โปรดระบุ)"));
   const [customClub, setCustomClub] = useState<string>("");
@@ -114,7 +114,7 @@ export default function StudentBorrow() {
       return;
     }
 
-    if (bookerType === "club") {
+    if (bookerType === "organization") {
       if (!selectedClub) {
         setModalState({ isOpen: true, status: "error", title: "ข้อมูลไม่ครบถ้วน", message: "กรุณาเลือกฝ่าย/ชุมนุมด้วยครับ" });
         return;
@@ -154,7 +154,7 @@ export default function StudentBorrow() {
         projectFileUrl = publicUrlData.publicUrl;
       }
 
-      const finalClubName = bookerType === 'club' 
+      const finalClubName = bookerType === 'organization'
         ? (selectedClub === "อื่นๆ (โปรดระบุ)" ? customClub : selectedClub) 
         : null;
 
@@ -356,15 +356,15 @@ export default function StudentBorrow() {
                     <input 
                       type="radio" 
                       name="bookerType" 
-                      checked={bookerType === "club"}
-                      onChange={() => setBookerType("club")}
+                      checked={bookerType === "organization"}
+                      onChange={() => setBookerType("organization")}
                       style={{ marginRight: '8px', accentColor: '#800000' }}
                     />
                     ฝ่าย / ชุมนุม / องค์กร
                   </label>
                 </div>
 
-                {bookerType === "club" && (
+                {bookerType === "organization" && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <select 
                       value={selectedClub}
