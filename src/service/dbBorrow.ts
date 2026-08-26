@@ -202,7 +202,7 @@ export async function approveBorrow(borrowId: number) {
 export async function returnEquipment(borrowId: number) {
   const { data, error } = await supabase
     .from("borrow_requests")
-    .update({ status: "returned" })
+    .update({ status: "returned", actual_return: new Date().toISOString() })
     .eq("id", borrowId)
     .select()
     .single();

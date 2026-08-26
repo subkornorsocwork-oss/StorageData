@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRole } from "@/context/RoleContext";
+import AdminBorrowControls from "@/components/AdminBorrowControls";
 
 // ── Types ──────────────────────────────────────────────────
 interface Equipment {
@@ -86,7 +87,7 @@ const compareBarcodes = (a: Equipment, b: Equipment) => {
 
 export default function AdminBorrow() {
   const { profile } = useRole();
-  const [activeTab, setActiveTab] = useState<"requests"|"inventory">("requests");
+  const [activeTab, setActiveTab] = useState<"requests"|"inventory"|"controls">("requests");
 
   const [requests, setRequests]         = useState<BorrowRequest[]>([]);
   const [loadingReq, setLoadingReq]     = useState(true);
@@ -380,6 +381,7 @@ export default function AdminBorrow() {
         {([
           { key:"requests",  label:"📝 จัดการคำขอยืม-คืน" },
           { key:"inventory", label:"📦 สต๊อกพัสดุ & บาร์โค้ด" },
+          { key:"controls", label:"⚖️ องค์กรและข้อจำกัด" },
         ] as const).map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             style={{ padding:"10px 20px", border:"none", cursor:"pointer", fontWeight:"bold", fontSize:"0.9rem",
@@ -649,6 +651,8 @@ export default function AdminBorrow() {
           </div>
         </div>
       )}
+
+      {activeTab === "controls" && <AdminBorrowControls />}
 
       {documentModal.isOpen && (
         <div style={{ position:"fixed", inset:0, backgroundColor:"rgba(15,23,42,0.72)", display:"flex", justifyContent:"center", alignItems:"center", zIndex:10000, padding:"20px" }}>

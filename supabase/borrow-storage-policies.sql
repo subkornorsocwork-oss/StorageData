@@ -20,9 +20,20 @@ to authenticated
 with check (
   exists (
     select 1 from public.borrow_requests r
-    where r.id = borrow_request_id and r.user_id = auth.uid()
+    where r.id = borrow_items.borrow_request_id
+      and r.user_id = auth.uid()
   )
 );
+
+-- A request and its item rows are inserted by the same signed-in user.
+-- Keep this policy explicit because Supabase does not infer it from the
+-- foreign key relationship.
+drop policy if exists "authenticated can insert own borrow request" on public.borrow_requests;
+create policy "authenticated can insert own borrow request"
+on public.borrow_requests
+for insert
+to authenticated
+with check (user_id = auth.uid());
 
 drop policy if exists "authenticated can read borrow documents" on storage.objects;
 create policy "authenticated can read borrow documents"

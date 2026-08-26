@@ -14,7 +14,7 @@ interface EquipmentItem {
   quantity: number; 
 }
 
-const mockClubs = [
+const fallbackClubs = [
   "ฝ่ายวิชาการ",
   "ฝ่ายสวัสดิการและสิทธิประโยชน์",
   "ฝ่ายศิลปวัฒนธรรม",
@@ -31,6 +31,7 @@ export default function StudentBorrow() {
   // State สำหรับฟอร์มและบาร์โค้ด
   const [bookerType, setBookerType] = useState<"student" | "club">("student");
   const [selectedClub, setSelectedClub] = useState<string>("");
+  const [organizations, setOrganizations] = useState<string[]>(fallbackClubs.filter((club) => club !== "อื่นๆ (โปรดระบุ)"));
   const [customClub, setCustomClub] = useState<string>("");
   const [phone, setPhone] = useState("");
   const [borrowDate, setBorrowDate] = useState("");
@@ -61,6 +62,15 @@ export default function StudentBorrow() {
       const { data, error } = await supabase.from('equipment').select('*');
 
       if (error) throw error;
+
+      const { data: organizationRows } = await supabase
+        .from("borrow_organizations")
+        .select("name")
+        .eq("is_active", true)
+        .order("name");
+      if (organizationRows && organizationRows.length > 0) {
+        setOrganizations(organizationRows.map((row) => row.name));
+      }
 
       if (data) {
         const formattedData: EquipmentItem[] = data.map(item => ({
@@ -147,6 +157,17 @@ export default function StudentBorrow() {
       const finalClubName = bookerType === 'club' 
         ? (selectedClub === "อื่นๆ (โปรดระบุ)" ? customClub : selectedClub) 
         : null;
+
+      const userRestrictionQuery = supabase.from("borrow_restrictions").select("reason, ends_at").eq("is_active", true).eq("user_id", user.id);
+      const organizationRestrictionQuery = finalClubName
+        ? supabase.from("borrow_restrictions").select("reason, ends_at").eq("is_active", true).eq("org_name", finalClubName)
+        : Promise.resolve({ data: [], error: null });
+      const [userRestrictionResult, organizationRestrictionResult] = await Promise.all([userRestrictionQuery, organizationRestrictionQuery]);
+      if (!userRestrictionResult.error && !organizationRestrictionResult.error) {
+        const activeRestrictions = [...(userRestrictionResult.data ?? []), ...(organizationRestrictionResult.data ?? [])];
+        const validRestriction = activeRestrictions.find((restriction) => !restriction.ends_at || new Date(restriction.ends_at) >= new Date());
+        if (validRestriction) throw new Error(`ไม่สามารถยืมได้: ${validRestriction.reason}`);
+      }
 
       const borrowTimestamp = new Date(`${borrowDate}T${borrowTime}`).toISOString();
       const returnTimestamp = new Date(`${returnDate}T${returnTime}`).toISOString();
@@ -351,7 +372,7 @@ export default function StudentBorrow() {
                       style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', boxSizing: 'border-box', backgroundColor: 'white', fontSize: '0.9rem', color: '#1e293b' }}
                     >
                       <option value="" disabled>-- กรุณาเลือกองค์กรที่สังกัด --</option>
-                      {mockClubs.map((club, idx) => (
+                      {[...organizations, "อื่นๆ (โปรดระบุ)"].map((club, idx) => (
                         <option key={idx} value={club}>{club}</option>
                       ))}
                     </select>
