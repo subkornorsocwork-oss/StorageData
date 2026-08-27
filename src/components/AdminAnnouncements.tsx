@@ -13,6 +13,7 @@ interface Announcement {
   is_pinned: boolean;
   is_active: boolean;
   created_at: string;
+  attachment_url?: string | null;
 }
 
 interface Banner {
@@ -49,6 +50,7 @@ export default function AdminAnnouncements() {
   const [newDetail, setNewDetail] = useState("");
   const [newDate, setNewDate] = useState("");
   const [newPinned, setNewPinned] = useState(false);
+  const [announcementFile, setAnnouncementFile] = useState<File | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const [bannerFiles, setBannerFiles] = useState<File[]>([]);
@@ -63,6 +65,7 @@ export default function AdminAnnouncements() {
     setNewDetail("");
     setNewDate("");
     setNewPinned(false);
+    setAnnouncementFile(null);
   };
 
   useEffect(() => {
@@ -136,7 +139,21 @@ export default function AdminAnnouncements() {
 
     setModal({ isOpen: true, status: "loading", title: "กำลังบันทึก...", message: "" });
 
-    const payload = {
+    let attachmentUrl: string | null = null;
+    if (editingId) {
+      attachmentUrl = announcements.find((item) => item.id === editingId)?.attachment_url ?? null;
+    }
+
+    try {
+      if (announcementFile) {
+        const safeName = announcementFile.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+        const path = `${profile?.id ?? "admin"}/announcement-${Date.now()}-${safeName}`;
+        const { error: uploadError } = await supabase.storage.from("documents").upload(path, announcementFile, { upsert: false });
+        if (uploadError) throw uploadError;
+        attachmentUrl = supabase.storage.from("documents").getPublicUrl(path).data.publicUrl;
+      }
+
+      const payload = {
       post_type: activeTab === "announcements" ? "announcement" : "event",
       title: newTitle.trim(),
       detail: newDetail.trim() || null,
@@ -144,14 +161,19 @@ export default function AdminAnnouncements() {
       is_pinned: newPinned,
       is_active: true,
       created_by: profile?.id ?? null,
+      attachment_url: attachmentUrl,
     };
 
     const { error } = editingId
       ? await supabase.from("announcements").update(payload).eq("id", editingId)
       : await supabase.from("announcements").insert(payload);
 
-    if (error) {
+      if (error) {
       setModal({ isOpen: true, status: "error", title: "เกิดข้อผิดพลาด", message: error.message });
+        return;
+      }
+    } catch (error) {
+      setModal({ isOpen: true, status: "error", title: "อัปโหลดไฟล์ไม่สำเร็จ", message: error instanceof Error ? error.message : "เกิดข้อผิดพลาด" });
       return;
     }
 
@@ -360,6 +382,14 @@ export default function AdminAnnouncements() {
                 />
               </div>
 
+              {activeTab === "announcements" && (
+                <div>
+                  <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "5px" }}>เอกสารประกาศ (PDF)</label>
+                  <input type="file" accept="application/pdf,.pdf" onChange={(e) => setAnnouncementFile(e.target.files?.[0] ?? null)} />
+                  {announcementFile && <p style={{ margin: "5px 0 0", fontSize: "0.78rem", color: "#64748b" }}>{announcementFile.name}</p>}
+                </div>
+              )}
+
               <div>
                 <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "5px" }}>รายละเอียด</label>
                 <textarea
@@ -440,6 +470,7 @@ export default function AdminAnnouncements() {
                           <span style={{ fontWeight: 700, color: "#1e293b", fontSize: "0.9rem" }}>{item.title}</span>
                         </div>
                         {item.detail && <p style={{ margin: "0 0 4px", fontSize: "0.8rem", color: "#64748b" }}>{item.detail}</p>}
+                        {item.attachment_url && <a href={item.attachment_url} target="_blank" rel="noreferrer" style={{ fontSize: "0.78rem", color: "#2563eb" }}>📎 เปิดเอกสาร PDF</a>}
                         {item.event_date && (
                           <span style={{ fontSize: "0.75rem", color: "#800000", fontWeight: 600 }}>
                             📅 {fmtDate(item.event_date)}

@@ -12,6 +12,11 @@ export interface UserProfile {
   role: "student" | "admin";
   phone?: string | null;
   department?: string | null;
+  contact_location?: string | null;
+  contact_phone?: string | null;
+  contact_hours?: string | null;
+  contact_email?: string | null;
+  instagram_url?: string | null;
 }
 
 const RoleContext = createContext<{

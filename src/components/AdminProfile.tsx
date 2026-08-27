@@ -16,6 +16,11 @@ export default function AdminProfile() {
     email: "กำลังโหลด...",
     phone: "-",
     department: "-",
+    contactLocation: "ชั้น 1 อาคาร กน.สค.",
+    contactPhone: "02-xxx-xxxx",
+    contactHours: "จ-ศ 08:30 - 16:30 น.",
+    contactEmail: "soc@dome.tu.ac.th",
+    instagramUrl: "https://www.instagram.com/swtu_studentcommittee/",
   });
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -23,6 +28,11 @@ export default function AdminProfile() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [editPhone, setEditPhone] = useState("");
   const [editDepartment, setEditDepartment] = useState("");
+  const [editContactLocation, setEditContactLocation] = useState("");
+  const [editContactPhone, setEditContactPhone] = useState("");
+  const [editContactHours, setEditContactHours] = useState("");
+  const [editContactEmail, setEditContactEmail] = useState("");
+  const [editInstagramUrl, setEditInstagramUrl] = useState("");
   const [activityLogs, setActivityLogs] = useState<{ id: string; action: string; date: string; time: string }[]>([]);
 
   useEffect(() => {
@@ -35,11 +45,21 @@ export default function AdminProfile() {
       email: profile.email || "",
       phone: profile.phone || "-",
       department: profile.department || "-",
+      contactLocation: profile.contact_location || "ชั้น 1 อาคาร กน.สค.",
+      contactPhone: profile.contact_phone || profile.phone || "02-xxx-xxxx",
+      contactHours: profile.contact_hours || "จ-ศ 08:30 - 16:30 น.",
+      contactEmail: profile.contact_email || "soc@dome.tu.ac.th",
+      instagramUrl: profile.instagram_url || "https://www.instagram.com/swtu_studentcommittee/",
     };
 
     setAdminInfo(nextInfo);
     setEditPhone(profile.phone || "");
     setEditDepartment(profile.department || "");
+    setEditContactLocation(profile.contact_location || "ชั้น 1 อาคาร กน.สค.");
+    setEditContactPhone(profile.contact_phone || profile.phone || "");
+    setEditContactHours(profile.contact_hours || "จ-ศ 08:30 - 16:30 น.");
+    setEditContactEmail(profile.contact_email || "soc@dome.tu.ac.th");
+    setEditInstagramUrl(profile.instagram_url || "https://www.instagram.com/swtu_studentcommittee/");
 
     const loadActivityLogs = async () => {
       const [announcementResult, bookingResult, borrowResult] = await Promise.all([
@@ -83,6 +103,11 @@ export default function AdminProfile() {
         .update({
           phone: editPhone,
           department: editDepartment,
+          contact_location: editContactLocation,
+          contact_phone: editContactPhone,
+          contact_hours: editContactHours,
+          contact_email: editContactEmail,
+          instagram_url: editInstagramUrl,
         })
         .eq("id", adminInfo.id);
 
@@ -92,6 +117,11 @@ export default function AdminProfile() {
         ...prev,
         phone: editPhone,
         department: editDepartment,
+        contactLocation: editContactLocation,
+        contactPhone: editContactPhone,
+        contactHours: editContactHours,
+        contactEmail: editContactEmail,
+        instagramUrl: editInstagramUrl,
       }));
       setIsEditModalOpen(false);
       alert("อัปเดตข้อมูลสำเร็จ!");
@@ -211,11 +241,14 @@ export default function AdminProfile() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
               <div>
                 <p style={{ margin: "0 0 5px 0", color: "#64748b", fontSize: "0.85rem" }}>อีเมล</p>
-                <p style={{ margin: 0, color: "#1e293b", fontWeight: "bold" }}>{adminInfo.email}</p>
+                <p style={{ margin: 0, color: "#1e293b", fontWeight: "bold" }}>{adminInfo.contactEmail}</p>
               </div>
+              <div><p style={{ margin: "0 0 5px 0", color: "#64748b", fontSize: "0.85rem" }}>ที่ตั้ง</p><p style={{ margin: 0, color: "#1e293b", fontWeight: "bold" }}>{adminInfo.contactLocation}</p></div>
+              <div><p style={{ margin: "0 0 5px 0", color: "#64748b", fontSize: "0.85rem" }}>เวลาทำการ</p><p style={{ margin: 0, color: "#1e293b", fontWeight: "bold" }}>{adminInfo.contactHours}</p></div>
+              <div><p style={{ margin: "0 0 5px 0", color: "#64748b", fontSize: "0.85rem" }}>Instagram</p><a href={adminInfo.instagramUrl} target="_blank" rel="noreferrer" style={{ color: "#2563eb", fontWeight: "bold" }}>เปิด Instagram</a></div>
               <div>
                 <p style={{ margin: "0 0 5px 0", color: "#64748b", fontSize: "0.85rem" }}>เบอร์โทรศัพท์</p>
-                <p style={{ margin: 0, color: "#1e293b", fontWeight: "bold" }}>{adminInfo.phone}</p>
+                <p style={{ margin: 0, color: "#1e293b", fontWeight: "bold" }}>{adminInfo.contactPhone}</p>
               </div>
               <div>
                 <p style={{ margin: "0 0 5px 0", color: "#64748b", fontSize: "0.85rem" }}>สังกัด / หน่วยงาน</p>
@@ -266,6 +299,12 @@ export default function AdminProfile() {
               <label style={{ display: "block", fontSize: "0.85rem", color: "#64748b", marginBottom: "5px" }}>สังกัด / หน่วยงาน</label>
               <input type="text" value={editDepartment} onChange={(e) => setEditDepartment(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1" }} />
             </div>
+            {[{ label: "ที่ตั้ง", value: editContactLocation, set: setEditContactLocation }, { label: "เบอร์โทรสำหรับติดต่อ", value: editContactPhone, set: setEditContactPhone }, { label: "เวลาทำการ", value: editContactHours, set: setEditContactHours }, { label: "อีเมลสำหรับติดต่อ", value: editContactEmail, set: setEditContactEmail }, { label: "ลิงก์ Instagram", value: editInstagramUrl, set: setEditInstagramUrl }].map((field) => (
+              <div key={field.label} style={{ marginBottom: "15px" }}>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "#64748b", marginBottom: "5px" }}>{field.label}</label>
+                <input type="text" value={field.value} onChange={(e) => field.set(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", boxSizing: "border-box" }} />
+              </div>
+            ))}
             <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
               <button onClick={() => setIsEditModalOpen(false)} style={{ padding: "8px 16px", border: "none", backgroundColor: "#f1f5f9", color: "#475569", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>ยกเลิก</button>
               <button onClick={handleSaveChanges} style={{ padding: "8px 16px", border: "none", backgroundColor: "#3b82f6", color: "white", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>บันทึก</button>

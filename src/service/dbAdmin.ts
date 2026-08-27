@@ -19,6 +19,7 @@ export interface Announcement {
   is_pinned: boolean;
   is_active: boolean;
   created_at: string;
+  attachment_url: string | null;
 }
 
 /** ดึงประกาศ / กิจกรรมทั้งหมด */

@@ -12,6 +12,8 @@ type AnnouncementItem = {
   id: number;
   date: string;
   title: string;
+  detail: string | null;
+  attachment_url: string | null;
 };
 
 type EventItem = {
@@ -19,6 +21,7 @@ type EventItem = {
   day: string;
   month: string;
   title: string;
+  detail: string | null;
 };
 
 const THAI_MONTHS = [
@@ -101,14 +104,14 @@ export default function StudentHome() {
         const [announcementResult, eventResult] = await Promise.all([
           supabase
             .from("announcements")
-            .select("id, title, created_at")
+            .select("id, title, detail, attachment_url, created_at")
             .eq("post_type", "announcement")
             .eq("is_active", true)
             .order("created_at", { ascending: false })
             .limit(8),
           supabase
             .from("announcements")
-            .select("id, title, event_date, created_at")
+            .select("id, title, detail, event_date, created_at")
             .eq("post_type", "event")
             .eq("is_active", true)
             .order("event_date", { ascending: true })
@@ -123,6 +126,8 @@ export default function StudentHome() {
             id: item.id,
             date: formatThaiDate(item.created_at),
             title: item.title,
+            detail: item.detail ?? null,
+            attachment_url: item.attachment_url ?? null,
           })),
         );
 
@@ -131,6 +136,7 @@ export default function StudentHome() {
             id: item.id,
             ...splitThaiDate(item.event_date ?? item.created_at),
             title: item.title,
+            detail: item.detail ?? null,
           })),
         );
       } catch (error) {
@@ -270,7 +276,7 @@ export default function StudentHome() {
                     style={{
                       display: "flex",
                       gap: "15px",
-                      alignItems: "center",
+                      alignItems: "flex-start",
                       padding: "10px",
                       backgroundColor: "#f8fafc",
                       borderRadius: "8px",
@@ -290,7 +296,11 @@ export default function StudentHome() {
                     >
                       {item.date}
                     </span>
-                    <span style={{ color: "#334155", fontSize: "0.95rem" }}>{item.title}</span>
+                    <div style={{ color: "#334155", fontSize: "0.95rem" }}>
+                      <div>{item.title}</div>
+                      {item.detail && <div style={{ marginTop: "4px", color: "#64748b", fontSize: "0.82rem" }}>{item.detail}</div>}
+                      {item.attachment_url && <a href={item.attachment_url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "5px", color: "#2563eb", fontSize: "0.8rem" }}>📎 เอกสาร PDF</a>}
+                    </div>
                   </div>
                 ))
               )}
@@ -325,14 +335,14 @@ export default function StudentHome() {
                 <p style={{ color: "#64748b", fontSize: "0.95rem" }}>ยังไม่มีกิจกรรม</p>
               ) : (
                 events.map((item) => (
-                  <div key={item.id} style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+                  <div key={item.id} style={{ display: "flex", gap: "15px", alignItems: "flex-start" }}>
                     <div style={{ textAlign: "center", minWidth: "50px" }}>
                       <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#800000" }}>
                         {item.day}
                       </div>
                       <div style={{ fontSize: "0.8rem", color: "#64748b" }}>{item.month}</div>
                     </div>
-                    <div style={{ color: "#334155", fontSize: "0.95rem" }}>{item.title}</div>
+                    <div style={{ color: "#334155", fontSize: "0.95rem" }}><div>{item.title}</div>{item.detail && <div style={{ marginTop: "4px", color: "#64748b", fontSize: "0.82rem" }}>{item.detail}</div>}</div>
                   </div>
                 ))
               )}
