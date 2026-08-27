@@ -427,7 +427,7 @@ export default function AdminBorrow() {
                 <table style={{ width:"100%", borderCollapse:"collapse", minWidth:"1120px" }}>
                   <thead>
                     <tr style={{ backgroundColor:"#f8fafc", borderBottom:"2px solid #800000" }}>
-                      {["วันที่ยืม","กำหนดคืน","ผู้ยืม / องค์กร","เลขทะเบียน","เบอร์โทรศัพท์","อุปกรณ์","เอกสารโครงการ / ภาพคืน","สถานะ","จัดการ"].map(h => (
+                      {["วันที่ยืม","กำหนดคืน","ผู้ยืม","องค์กร/ชุมนุม","เลขทะเบียน","เบอร์โทรศัพท์","อุปกรณ์","เอกสารโครงการ","ภาพคืน","สถานะ","จัดการ"].map(h => (
                         <th key={h} style={{ padding:"12px 14px", textAlign:"left", fontSize:"0.82rem", fontWeight:700, color:"#64748b" }}>{h}</th>
                       ))}
                     </tr>
@@ -443,26 +443,20 @@ export default function AdminBorrow() {
                           <td style={{ padding:"12px 14px", fontSize:"0.85rem", color: over ? "#b91c1c" : "#ef4444", fontWeight:600 }}>{fmtDateTime(req.return_due_date)}</td>
                           <td style={{ padding:"12px 14px" }}>
                             <div style={{ fontWeight:600, fontSize:"0.875rem" }}>{req.user_name}</div>
-                            <div style={{ fontSize:"0.75rem", color: req.borrower_type === "organization" ? "#800000" : "#64748b", fontWeight: req.borrower_type === "organization" ? 600 : 400 }}>
-                              {req.borrower_type === "organization" ? `องค์กร: ${req.org_name || "ไม่ระบุ"}` : "ยืมในนาม: นักศึกษาทั่วไป"}
-                            </div>
                             <div style={{ fontSize:"0.7rem", color:"#94a3b8" }}>ยื่นเมื่อ: {fmtDateTime(req.created_at)}</div>
                           </td>
+                          <td style={{ padding:"12px 14px", fontSize:"0.82rem", color: req.org_name ? "#800000" : "#94a3b8", fontWeight: req.org_name ? 600 : 400 }}>{req.org_name ?? "นักศึกษาทั่วไป"}</td>
                           <td style={{ padding:"12px 14px", fontSize:"0.82rem", color:"#475569" }}>{req.student_id ?? "-"}</td>
                           <td style={{ padding:"12px 14px", fontSize:"0.82rem", color:"#475569" }}>{req.user_phone ?? "-"}</td>
                           <td style={{ padding:"12px 14px", fontSize:"0.82rem", color:"#475569" }}>{items}</td>
                           <td style={{ padding:"12px 14px" }}>
-                            {documentUrl || req.return_proof_url
-                              ? <div style={{ display:"flex", flexDirection:"column", gap:"4px" }}>
-                                {documentUrl && <button
-                                  onClick={() => openDocumentModal(documentUrl, `เอกสารแนบของ ${req.user_name}`)}
-                                  style={{ padding:"4px 8px", backgroundColor:"#f1f5f9", color:"#475569", borderRadius:"6px", textDecoration:"none", fontSize:"0.78rem", fontWeight:600, border:"none", cursor:"pointer" }}
-                                >
-                                  📄 เอกสารโครงการ
-                                </button>}
-                                {req.return_proof_url && <button onClick={() => openDocumentModal(req.return_proof_url!, `ภาพพัสดุที่คืนของ ${req.user_name}`)} style={{ padding:"4px 8px", backgroundColor:"#ecfdf5", color:"#047857", borderRadius:"6px", fontSize:"0.78rem", fontWeight:600, border:"none", cursor:"pointer" }}>🖼️ ภาพคืน</button>}
-                              </div>
-                              : <span style={{ fontSize:"0.78rem", color:"#94a3b8" }}>-</span>}
+                            {documentUrl ? <button
+                              onClick={() => openDocumentModal(documentUrl, `เอกสารโครงการของ ${req.user_name}`)}
+                              style={{ padding:"4px 8px", backgroundColor:"#f1f5f9", color:"#475569", borderRadius:"6px", fontSize:"0.78rem", fontWeight:600, border:"none", cursor:"pointer" }}
+                            >📄 เปิดเอกสาร</button> : <span style={{ fontSize:"0.78rem", color:"#94a3b8" }}>-</span>}
+                          </td>
+                          <td style={{ padding:"12px 14px" }}>
+                            {req.return_proof_url ? <button onClick={() => openDocumentModal(req.return_proof_url!, `ภาพพัสดุที่คืนของ ${req.user_name}`)} style={{ padding:"4px 8px", backgroundColor:"#ecfdf5", color:"#047857", borderRadius:"6px", fontSize:"0.78rem", fontWeight:600, border:"none", cursor:"pointer" }}>🖼️ เปิดภาพ</button> : <span style={{ fontSize:"0.78rem", color:"#94a3b8" }}>-</span>}
                           </td>
                           <td style={{ padding:"12px 14px" }}><StatusBadge req={req} /></td>
                           <td style={{ padding:"12px 14px" }}>

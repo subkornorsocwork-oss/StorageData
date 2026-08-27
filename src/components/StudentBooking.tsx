@@ -199,6 +199,16 @@ export default function StudentBooking() {
       const { data:{ user } } = await supabase.auth.getUser();
       if (!user) throw new Error("กรุณาเข้าสู่ระบบก่อน");
 
+      const { data: restrictions, error: restrictionError } = await supabase
+        .from("user_service_restrictions")
+        .select("reason, ends_at")
+        .eq("service_type", "booking")
+        .eq("user_id", user.id)
+        .eq("is_active", true);
+      if (restrictionError) throw restrictionError;
+      const activeRestriction = (restrictions ?? []).find((item) => !item.ends_at || new Date(item.ends_at) >= new Date());
+      if (activeRestriction) throw new Error(`ไม่สามารถจองสถานที่ได้: ${activeRestriction.reason}`);
+
       // เช็กเวลาซ้อนทุกวัน
       for (const db of dayBookings) {
         const { data: conflicts } = await supabase.from("bookings")

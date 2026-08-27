@@ -34,6 +34,10 @@ export default function AdminUsers() {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [history, setHistory]           = useState<UserHistory | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [restrictionType, setRestrictionType] = useState<"booking" | "borrowing">("booking");
+  const [restrictionReason, setRestrictionReason] = useState("");
+  const [restrictionEndsAt, setRestrictionEndsAt] = useState("");
+  const [restrictionMessage, setRestrictionMessage] = useState("");
 
   // ── โหลดรายชื่อ users ──────────────────────────────────
   const loadUsers = useCallback(async () => {
@@ -80,6 +84,23 @@ export default function AdminUsers() {
   const handleSelectUser = (user: UserProfile) => {
     setSelectedUser(user);
     loadHistory(user.id);
+  };
+
+  const saveRestriction = async () => {
+    if (!selectedUser || !restrictionReason.trim()) {
+      setRestrictionMessage("กรุณาระบุเหตุผลการแบน");
+      return;
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from("user_service_restrictions").insert({
+      service_type: restrictionType,
+      user_id: selectedUser.id,
+      reason: restrictionReason.trim(),
+      ends_at: restrictionEndsAt ? new Date(`${restrictionEndsAt}T23:59:59`).toISOString() : null,
+      created_by: user?.id ?? null,
+    });
+    setRestrictionMessage(error ? error.message : "บันทึกการแบนแล้ว");
+    if (!error) { setRestrictionReason(""); setRestrictionEndsAt(""); }
   };
 
   // ── filter ──────────────────────────────────────────────
@@ -140,6 +161,19 @@ export default function AdminUsers() {
 
           {/* ขวา: ประวัติ */}
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ backgroundColor: "#fff7ed", padding: "20px", borderRadius: "16px", border: "1px solid #fed7aa" }}>
+              <h3 style={{ margin: "0 0 14px", color: "#9a3412", fontSize: "1rem" }}>⚠️ ระงับสิทธิ์ผู้ใช้</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: "8px" }}>
+                <select value={restrictionType} onChange={e => setRestrictionType(e.target.value as "booking" | "borrowing")} style={{ padding: "9px", borderRadius: "8px", border: "1px solid #fdba74" }}>
+                  <option value="booking">แบนการจองสถานที่</option>
+                  <option value="borrowing">แบนการยืมพัสดุ</option>
+                </select>
+                <input value={restrictionReason} onChange={e => setRestrictionReason(e.target.value)} placeholder="เหตุผลการแบน" style={{ padding: "9px", borderRadius: "8px", border: "1px solid #fdba74" }} />
+                <input type="date" value={restrictionEndsAt} onChange={e => setRestrictionEndsAt(e.target.value)} style={{ padding: "9px", borderRadius: "8px", border: "1px solid #fdba74" }} />
+                <button onClick={saveRestriction} style={{ padding: "9px 14px", border: 0, borderRadius: "8px", background: "#c2410c", color: "white", fontWeight: 700 }}>บันทึก</button>
+              </div>
+              {restrictionMessage && <p style={{ margin: "10px 0 0", color: "#9a3412", fontSize: "0.82rem" }}>{restrictionMessage}</p>}
+            </div>
             {loadingHistory ? (
               <div style={{ backgroundColor: "white", padding: "40px", borderRadius: "16px", textAlign: "center", color: "#94a3b8" }}>กำลังโหลดประวัติ...</div>
             ) : (

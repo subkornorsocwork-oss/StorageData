@@ -18,6 +18,7 @@ export default function AdminBorrowControls() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [restrictions, setRestrictions] = useState<Restriction[]>([]);
   const [organizationName, setOrganizationName] = useState("");
+  const [editingOrganization, setEditingOrganization] = useState<Organization | null>(null);
   const [targetType, setTargetType] = useState<"user" | "organization">("user");
   const [target, setTarget] = useState("");
   const [reason, setReason] = useState("");
@@ -41,6 +42,14 @@ export default function AdminBorrowControls() {
     const { error } = await supabase.from("borrow_organizations").insert({ name });
     setMessage(error ? error.message : "เพิ่มองค์กร/ชุมนุมแล้ว");
     if (!error) { setOrganizationName(""); load(); }
+  };
+
+  const saveOrganization = async () => {
+    const name = organizationName.trim();
+    if (!editingOrganization || !name) return;
+    const { error } = await supabase.from("borrow_organizations").update({ name }).eq("id", editingOrganization.id);
+    setMessage(error ? error.message : "แก้ไขชื่อองค์กรแล้ว");
+    if (!error) { setOrganizationName(""); setEditingOrganization(null); load(); }
   };
 
   const toggleOrganization = async (item: Organization) => {
@@ -71,12 +80,16 @@ export default function AdminBorrowControls() {
       <h2 style={{ marginTop: 0, color: "#1e293b" }}>จัดการฝ่าย / ชุมนุม / องค์กร</h2>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <input value={organizationName} onChange={e => setOrganizationName(e.target.value)} placeholder="ชื่อองค์กรหรือชุมนุม" style={{ flex: 1, minWidth: 220, padding: 10, border: "1px solid #cbd5e1", borderRadius: 8 }} />
-        <button onClick={addOrganization} style={{ padding: "10px 16px", border: 0, borderRadius: 8, background: "#800000", color: "white", fontWeight: 700 }}>+ เพิ่ม</button>
+        <button onClick={editingOrganization ? saveOrganization : addOrganization} style={{ padding: "10px 16px", border: 0, borderRadius: 8, background: "#800000", color: "white", fontWeight: 700 }}>{editingOrganization ? "บันทึกชื่อ" : "+ เพิ่ม"}</button>
+        {editingOrganization && <button onClick={() => { setEditingOrganization(null); setOrganizationName(""); }} style={{ padding: "10px 16px", border: "1px solid #cbd5e1", borderRadius: 8, background: "white" }}>ยกเลิก</button>}
       </div>
       <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
         {organizations.map(item => <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "#f8fafc", borderRadius: 8 }}>
           <span style={{ color: item.is_active ? "#1e293b" : "#94a3b8" }}>{item.name}</span>
-          <button onClick={() => toggleOrganization(item)} style={{ border: 0, borderRadius: 6, padding: "6px 10px", background: item.is_active ? "#fee2e2" : "#dcfce7", color: item.is_active ? "#b91c1c" : "#15803d" }}>{item.is_active ? "ปิดการใช้งาน" : "เปิดใช้งาน"}</button>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={() => { setEditingOrganization(item); setOrganizationName(item.name); }} style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 10px", background: "white" }}>แก้ไข</button>
+            <button onClick={() => toggleOrganization(item)} style={{ border: 0, borderRadius: 6, padding: "6px 10px", background: item.is_active ? "#fee2e2" : "#dcfce7", color: item.is_active ? "#b91c1c" : "#15803d" }}>{item.is_active ? "ปิดการใช้งาน" : "เปิดใช้งาน"}</button>
+          </div>
         </div>)}
       </div>
     </section>

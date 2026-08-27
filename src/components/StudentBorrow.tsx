@@ -163,12 +163,13 @@ export default function StudentBorrow() {
         : null;
 
       const userRestrictionQuery = supabase.from("borrow_restrictions").select("reason, ends_at").eq("is_active", true).eq("user_id", user.id);
+      const serviceRestrictionQuery = supabase.from("user_service_restrictions").select("reason, ends_at").eq("service_type", "borrowing").eq("is_active", true).eq("user_id", user.id);
       const organizationRestrictionQuery = finalClubName
         ? supabase.from("borrow_restrictions").select("reason, ends_at").eq("is_active", true).eq("org_name", finalClubName)
         : Promise.resolve({ data: [], error: null });
-      const [userRestrictionResult, organizationRestrictionResult] = await Promise.all([userRestrictionQuery, organizationRestrictionQuery]);
-      if (!userRestrictionResult.error && !organizationRestrictionResult.error) {
-        const activeRestrictions = [...(userRestrictionResult.data ?? []), ...(organizationRestrictionResult.data ?? [])];
+      const [userRestrictionResult, organizationRestrictionResult, serviceRestrictionResult] = await Promise.all([userRestrictionQuery, organizationRestrictionQuery, serviceRestrictionQuery]);
+      if (!userRestrictionResult.error && !organizationRestrictionResult.error && !serviceRestrictionResult.error) {
+        const activeRestrictions = [...(userRestrictionResult.data ?? []), ...(organizationRestrictionResult.data ?? []), ...(serviceRestrictionResult.data ?? [])];
         const validRestriction = activeRestrictions.find((restriction) => !restriction.ends_at || new Date(restriction.ends_at) >= new Date());
         if (validRestriction) throw new Error(`ไม่สามารถยืมได้: ${validRestriction.reason}`);
       }
