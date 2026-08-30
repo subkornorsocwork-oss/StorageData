@@ -75,7 +75,7 @@ export default function StudentBorrow() {
         setOrganizations(organizationRows.map((row) => row.name));
       }
       const { data: settings } = await supabase.from("borrow_settings").select("regulation_url").eq("id", 1).maybeSingle();
-      setRegulationUrl(settings?.regulation_url ?? null);
+      setRegulationUrl(settings?.regulation_url ?? "/borrow-regulations.pdf");
 
       if (data) {
         const formattedData: EquipmentItem[] = data.map(item => ({
