@@ -422,7 +422,7 @@ export default function AdminBooking() {
         {/* ══════════ แท็บ 2: ปฏิทิน ══════════ */}
         {activeTab === "calendar" && (
           <div className="admin-booking-card" style={{ backgroundColor: "white", padding: "30px", borderRadius: "18px", boxShadow: "0 2px 8px rgba(0,0,0,0.07)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+            <div className="admin-location-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", gap: "12px" }}>
               <button onClick={() => changeCalMonth(-1)} style={{ border: "none", background: "#f1f5f9", borderRadius: "8px", padding: "8px 14px", cursor: "pointer", fontWeight: "bold", fontSize: "1rem" }}>&lt;</button>
               <h2 style={{ margin: 0, color: "#800000", fontSize: "1.2rem" }}>
                 {THAI_MONTHS_FULL[calMonth]} {calYear + 543}
@@ -479,7 +479,8 @@ export default function AdminBooking() {
             {loadingLoc ? (
               <div style={{ padding: "40px", textAlign: "center", color: "#94a3b8" }}>กำลังโหลด...</div>
             ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <div className="admin-location-table-scroll">
+              <table style={{ width: "100%", minWidth: "760px", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ backgroundColor: "#f8fafc", borderBottom: "2px solid #800000" }}>
                     {["รหัส","ชื่อสถานที่","ประเภท","ความจุ","สถานะ","จัดการ"].map(h => (
@@ -515,6 +516,7 @@ export default function AdminBooking() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         )}
@@ -767,6 +769,31 @@ export default function AdminBooking() {
           .admin-booking-card {
             padding: 16px !important;
             border-radius: 14px !important;
+          }
+          .admin-booking-root h1 {
+            font-size: 1.45rem !important;
+            line-height: 1.35 !important;
+          }
+          .admin-location-header {
+            align-items: flex-start !important;
+            flex-wrap: wrap;
+          }
+          .admin-location-header h2 {
+            font-size: 1.15rem !important;
+            line-height: 1.4;
+          }
+          .admin-location-header button {
+            padding: 9px 12px !important;
+            font-size: 0.78rem !important;
+          }
+          .admin-location-table-scroll {
+            overflow-x: auto;
+            margin: 0 -16px;
+            padding: 0 16px 8px;
+            -webkit-overflow-scrolling: touch;
+          }
+          .admin-location-table-scroll table {
+            min-width: 720px !important;
           }
           .admin-booking-calendar-scroll {
             margin: 0 -16px;
