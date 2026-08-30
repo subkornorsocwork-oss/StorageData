@@ -356,7 +356,7 @@ export default function AdminBooking() {
                   <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "750px" }}>
                     <thead>
                       <tr style={{ backgroundColor: "#f8fafc", borderBottom: "2px solid #800000" }}>
-                        {["วันที่/เวลา","ยื่นเมื่อ","สถานที่","ผู้จอง","เอกสาร","สถานะ","จัดการ"].map(h => (
+                        {["วันที่/เวลา","ยื่นเมื่อ","สถานที่","ผู้จอง","วัตถุประสงค์","เอกสาร","สถานะ","จัดการ"].map(h => (
                           <th key={h} style={{ padding: "14px 16px", textAlign: "left", fontSize: "0.83rem", fontWeight: 700, color: "#64748b" }}>{h}</th>
                         ))}
                       </tr>
@@ -376,6 +376,7 @@ export default function AdminBooking() {
                               <div style={{ fontWeight: 600, fontSize: "0.875rem" }}>{b.user_name}</div>
                               <div style={{ fontSize: "0.78rem", color: "#94a3b8" }}>{b.org_name ?? b.user_faculty ?? b.student_id ?? ""}</div>
                             </td>
+                            <td style={{ padding: "14px 16px", fontSize: "0.82rem", color: "#475569", maxWidth: "220px", whiteSpace: "pre-wrap" }}>{b.purpose ?? "-"}</td>
                             <td style={{ padding: "14px 16px" }}>
                               {parseBookingDocuments(b.document_url) ? (
                                 <button

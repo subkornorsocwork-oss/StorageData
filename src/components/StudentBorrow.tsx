@@ -30,10 +30,12 @@ export default function StudentBorrow() {
   const [loading, setLoading] = useState(true);
 
   // State สำหรับฟอร์มและบาร์โค้ด
-  const [bookerType, setBookerType] = useState<"student" | "organization">("student");
+  const [bookerType, setBookerType] = useState<"internal_person" | "internal_organization" | "external">("internal_person");
   const [selectedClub, setSelectedClub] = useState<string>("");
   const [organizations, setOrganizations] = useState<string[]>(fallbackClubs.filter((club) => club !== "อื่นๆ (โปรดระบุ)"));
   const [customClub, setCustomClub] = useState<string>("");
+  const [externalOrganization, setExternalOrganization] = useState("");
+  const [regulationUrl, setRegulationUrl] = useState<string | null>(null);
   const [phone, setPhone] = useState("");
   const [borrowDate, setBorrowDate] = useState("");
   const [borrowTime, setBorrowTime] = useState("");
@@ -72,6 +74,8 @@ export default function StudentBorrow() {
       if (organizationRows && organizationRows.length > 0) {
         setOrganizations(organizationRows.map((row) => row.name));
       }
+      const { data: settings } = await supabase.from("borrow_settings").select("regulation_url").eq("id", 1).maybeSingle();
+      setRegulationUrl(settings?.regulation_url ?? null);
 
       if (data) {
         const formattedData: EquipmentItem[] = data.map(item => ({
@@ -118,7 +122,7 @@ export default function StudentBorrow() {
       return;
     }
 
-    if (bookerType === "organization") {
+    if (bookerType === "internal_organization") {
       if (!selectedClub) {
         setModalState({ isOpen: true, status: "error", title: "ข้อมูลไม่ครบถ้วน", message: "กรุณาเลือกฝ่าย/ชุมนุมด้วยครับ" });
         return;
@@ -127,6 +131,10 @@ export default function StudentBorrow() {
         setModalState({ isOpen: true, status: "error", title: "ข้อมูลไม่ครบถ้วน", message: "กรุณาระบุชื่อองค์กรหรือชุมนุมด้วยครับ" });
         return;
       }
+    }
+    if (bookerType === "external" && !externalOrganization.trim()) {
+      setModalState({ isOpen: true, status: "error", title: "ข้อมูลไม่ครบถ้วน", message: "กรุณาระบุองค์กรหรือคณะที่สังกัดครับ" });
+      return;
     }
 
     if (!borrowDate || !borrowTime || !returnDate || !returnTime || !phone || !purpose) {
@@ -158,9 +166,9 @@ export default function StudentBorrow() {
         projectFileUrl = publicUrlData.publicUrl;
       }
 
-      const finalClubName = bookerType === 'organization'
+      const finalClubName = bookerType === 'internal_organization'
         ? (selectedClub === "อื่นๆ (โปรดระบุ)" ? customClub : selectedClub) 
-        : null;
+        : bookerType === "external" ? externalOrganization.trim() : null;
 
       const userRestrictionQuery = supabase.from("borrow_restrictions").select("reason, ends_at").eq("is_active", true).eq("user_id", user.id);
       const serviceRestrictionQuery = supabase.from("user_service_restrictions").select("reason, ends_at").eq("service_type", "borrowing").eq("is_active", true).eq("user_id", user.id);
@@ -323,6 +331,7 @@ export default function StudentBorrow() {
           {/* ฝั่งขวา: สรุปและฟอร์มยืม */}
           <div style={{ flex: '1 1 400px', backgroundColor: 'white', padding: '30px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
             <h2 style={{ marginTop: 0, color: '#1e293b', marginBottom: '20px' }}>2. สรุปรายการและรายละเอียด</h2>
+            {regulationUrl && <a href={regulationUrl} target="_blank" rel="noreferrer" style={{ display: 'block', marginBottom: '18px', padding: '12px', borderRadius: '8px', background: '#fff7ed', color: '#9a3412', fontWeight: 700, textDecoration: 'none' }}>📄 อ่านประกาศ/ระเบียบการยืมพัสดุ (PDF)</a>}
             
             <div style={{ backgroundColor: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '25px' }}>
               <h3 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: '#1e293b' }}>🛒 อุปกรณ์ที่เลือก</h3>
@@ -351,25 +360,29 @@ export default function StudentBorrow() {
                     <input 
                       type="radio" 
                       name="bookerType" 
-                      checked={bookerType === "student"}
-                      onChange={() => setBookerType("student")}
+                      checked={bookerType === "internal_person"}
+                      onChange={() => setBookerType("internal_person")}
                       style={{ marginRight: '8px', accentColor: '#800000' }}
                     />
-                    นักศึกษาทั่วไป
+                    ภายในคณะ: ยืมในนามบุคคล
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#334155' }}>
                     <input 
                       type="radio" 
                       name="bookerType" 
-                      checked={bookerType === "organization"}
-                      onChange={() => setBookerType("organization")}
+                      checked={bookerType === "internal_organization"}
+                      onChange={() => setBookerType("internal_organization")}
                       style={{ marginRight: '8px', accentColor: '#800000' }}
                     />
-                    ฝ่าย / ชุมนุม / องค์กร
+                    ภายในคณะ: ชมรม/กลุ่มกิจกรรม
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#334155' }}>
+                    <input type="radio" name="bookerType" checked={bookerType === "external"} onChange={() => setBookerType("external")} style={{ marginRight: '8px', accentColor: '#800000' }} />
+                    ภายนอกคณะ
                   </label>
                 </div>
 
-                {bookerType === "organization" && (
+                {bookerType === "internal_organization" && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <select 
                       value={selectedClub}
@@ -394,6 +407,7 @@ export default function StudentBorrow() {
                     )}
                   </div>
                 )}
+                {bookerType === "external" && <input type="text" value={externalOrganization} onChange={(e) => setExternalOrganization(e.target.value)} placeholder="ระบุองค์กร/คณะ/หน่วยงานที่สังกัด" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} required />}
               </div>
 
               <div>

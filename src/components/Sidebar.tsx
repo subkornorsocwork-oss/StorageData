@@ -32,6 +32,7 @@ export default function Sidebar() {
     { href: "/",             label: "🏠 หน้าแรก" },
     { href: "/booking",      label: "🏛️ จองสถานที่" },
     { href: "/borrow",       label: "📦 ยืม-คืน อุปกรณ์" },
+    { href: "/return",       label: "📥 แจ้งคืนพัสดุ" },
     { href: "/complaint",    label: "📢 แจ้งเรื่องร้องเรียน" },
     { href: "/lostandfound", label: "🔍 แจ้งของหาย" },
   ];

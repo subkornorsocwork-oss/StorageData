@@ -427,7 +427,7 @@ export default function AdminBorrow() {
                 <table style={{ width:"100%", borderCollapse:"collapse", minWidth:"1120px" }}>
                   <thead>
                     <tr style={{ backgroundColor:"#f8fafc", borderBottom:"2px solid #800000" }}>
-                      {["วันที่ยืม","กำหนดคืน","ผู้ยืม","องค์กร/ชุมนุม","เลขทะเบียน","เบอร์โทรศัพท์","อุปกรณ์","เอกสารโครงการ","ภาพคืน","สถานะ","จัดการ"].map(h => (
+                      {["วันที่ยืม","กำหนดคืน","ผู้ยืม","องค์กร/ชุมนุม","เลขทะเบียน","เบอร์โทรศัพท์","อุปกรณ์","วัตถุประสงค์","เอกสารโครงการ","ภาพคืน","สถานะ","จัดการ"].map(h => (
                         <th key={h} style={{ padding:"12px 14px", textAlign:"left", fontSize:"0.82rem", fontWeight:700, color:"#64748b" }}>{h}</th>
                       ))}
                     </tr>
@@ -435,7 +435,7 @@ export default function AdminBorrow() {
                   <tbody>
                     {filteredRequests.map((req, idx) => {
                       const over = isOverdue(req.return_due_date, req.status);
-                      const items = req.borrow_items?.map(i => `${i.equipment?.emoji ?? "📦"} ${i.equipment?.name} x${i.quantity}`).join(", ") ?? "-";
+                      const items = req.borrow_items ?? [];
                       const documentUrl = req.document_url;
                       return (
                         <tr key={req.id} style={{ borderBottom:"1px solid #f1f5f9", backgroundColor: over ? "#fef2f2" : idx%2===0 ? "white" : "#fafafa" }}>
@@ -448,7 +448,8 @@ export default function AdminBorrow() {
                           <td style={{ padding:"12px 14px", fontSize:"0.82rem", color: req.org_name ? "#800000" : "#94a3b8", fontWeight: req.org_name ? 600 : 400 }}>{req.org_name ?? "นักศึกษาทั่วไป"}</td>
                           <td style={{ padding:"12px 14px", fontSize:"0.82rem", color:"#475569" }}>{req.student_id ?? "-"}</td>
                           <td style={{ padding:"12px 14px", fontSize:"0.82rem", color:"#475569" }}>{req.user_phone ?? "-"}</td>
-                          <td style={{ padding:"12px 14px", fontSize:"0.82rem", color:"#475569" }}>{items}</td>
+                          <td style={{ padding:"12px 14px", fontSize:"0.82rem", color:"#475569" }}>{items.length > 0 ? items.map((item, itemIndex) => <div key={`${req.id}-${itemIndex}`} style={{ whiteSpace:"nowrap", marginBottom: itemIndex < items.length - 1 ? 4 : 0 }}>{item.equipment?.emoji ?? "📦"} {item.equipment?.name} x{item.quantity}</div>) : "-"}</td>
+                          <td style={{ padding:"12px 14px", fontSize:"0.82rem", color:"#475569", maxWidth:"220px", whiteSpace:"pre-wrap" }}>{req.purpose ?? "-"}</td>
                           <td style={{ padding:"12px 14px" }}>
                             {documentUrl ? <button
                               onClick={() => openDocumentModal(documentUrl, `เอกสารโครงการของ ${req.user_name}`)}
@@ -600,6 +601,7 @@ export default function AdminBorrow() {
               <div><b>อุปกรณ์:</b> {actionModal.req.borrow_items?.map(i => `${i.equipment?.name} x${i.quantity}`).join(", ") ?? "-"}</div>
               <div><b>วันยืม:</b> {fmtDate(actionModal.req.borrow_date)}</div>
               <div><b>กำหนดคืน:</b> {fmtDateTime(actionModal.req.return_due_date)}</div>
+              <div><b>วัตถุประสงค์:</b> {actionModal.req.purpose ?? "-"}</div>
             </div>
             {actionModal.type === "reject" && (
               <div style={{ marginBottom:"16px" }}>

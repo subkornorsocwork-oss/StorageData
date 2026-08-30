@@ -59,6 +59,7 @@ export default function LostAndFoundPage() {
         supabase
           .from("lost_and_found")
           .select("*")
+          .eq("is_resolved", false)
           .order("created_at", { ascending: false }),
         12000,
       );

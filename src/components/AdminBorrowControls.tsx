@@ -24,14 +24,19 @@ export default function AdminBorrowControls() {
   const [reason, setReason] = useState("");
   const [endsAt, setEndsAt] = useState("");
   const [message, setMessage] = useState("");
+  const [regulationUrl, setRegulationUrl] = useState<string | null>(null);
+  const [regulationFile, setRegulationFile] = useState<File | null>(null);
+  const [uploadingRegulation, setUploadingRegulation] = useState(false);
 
   const load = useCallback(async () => {
-    const [orgs, bans] = await Promise.all([
+    const [orgs, bans, settings] = await Promise.all([
       supabase.from("borrow_organizations").select("id, name, is_active").order("name"),
       supabase.from("borrow_restrictions").select("id, target_type, user_id, org_name, reason, ends_at, is_active").order("created_at", { ascending: false }),
+      supabase.from("borrow_settings").select("regulation_url").eq("id", 1).maybeSingle(),
     ]);
     if (!orgs.error) setOrganizations((orgs.data ?? []) as Organization[]);
     if (!bans.error) setRestrictions((bans.data ?? []) as Restriction[]);
+    if (!settings.error) setRegulationUrl(settings.data?.regulation_url ?? null);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -75,7 +80,33 @@ export default function AdminBorrowControls() {
     if (!error) load();
   };
 
+  const uploadRegulation = async () => {
+    if (!regulationFile) return;
+    setUploadingRegulation(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("กรุณาเข้าสู่ระบบก่อน");
+      const path = `${user.id}/borrow-regulation-${Date.now()}.pdf`;
+      const { error } = await supabase.storage.from("documents").upload(path, regulationFile, { upsert: false });
+      if (error) throw error;
+      const url = supabase.storage.from("documents").getPublicUrl(path).data.publicUrl;
+      const { error: saveError } = await supabase.from("borrow_settings").upsert({ id: 1, regulation_url: url, updated_by: user.id, updated_at: new Date().toISOString() });
+      if (saveError) throw saveError;
+      setRegulationUrl(url); setRegulationFile(null); setMessage("อัปโหลดระเบียบพัสดุแล้ว");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "อัปโหลดไม่สำเร็จ"); }
+    finally { setUploadingRegulation(false); }
+  };
+
   return <div style={{ display: "grid", gap: 20 }}>
+    <section style={{ background: "white", padding: 20, borderRadius: 16 }}>
+      <h2 style={{ marginTop: 0, color: "#1e293b" }}>ประกาศ / ระเบียบการยืมพัสดุ</h2>
+      <p style={{ color: "#64748b", fontSize: "0.9rem" }}>อัปโหลดไฟล์ PDF เพื่อให้ผู้ใช้เปิดอ่านก่อนส่งคำขอยืม</p>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <input type="file" accept="application/pdf,.pdf" onChange={e => setRegulationFile(e.target.files?.[0] ?? null)} />
+        <button disabled={!regulationFile || uploadingRegulation} onClick={uploadRegulation} style={{ padding: "10px 16px", border: 0, borderRadius: 8, background: "#800000", color: "white", fontWeight: 700 }}>{uploadingRegulation ? "กำลังอัปโหลด..." : "อัปโหลด PDF"}</button>
+        {regulationUrl && <a href={regulationUrl} target="_blank" rel="noreferrer" style={{ color: "#2563eb" }}>เปิดไฟล์ปัจจุบัน</a>}
+      </div>
+    </section>
     <section style={{ background: "white", padding: 20, borderRadius: 16 }}>
       <h2 style={{ marginTop: 0, color: "#1e293b" }}>จัดการฝ่าย / ชุมนุม / องค์กร</h2>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
