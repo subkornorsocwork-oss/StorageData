@@ -42,6 +42,16 @@ const THAI_MONTHS = [
   "ธ.ค.",
 ];
 
+function renderLinkedText(text: string) {
+  return text.split(/(https?:\/\/[^\s]+)/g).map((part, index) =>
+    /^https?:\/\//i.test(part) ? (
+      <a key={`${part}-${index}`} href={part} target="_blank" rel="noreferrer" style={{ color: "#2563eb", textDecoration: "underline" }}>
+        {part}
+      </a>
+    ) : part,
+  );
+}
+
 function formatThaiDate(dateStr: string) {
   const dt = new Date(dateStr);
   return `${dt.getDate()} ${THAI_MONTHS[dt.getMonth()]}`;
@@ -304,7 +314,7 @@ export default function StudentHome() {
                     </span>
                     <div style={{ color: "#334155", fontSize: "0.95rem" }}>
                       <div>{item.title}</div>
-                      {item.detail && <div style={{ marginTop: "4px", color: "#64748b", fontSize: "0.82rem" }}>{item.detail}</div>}
+                      {item.detail && <div style={{ marginTop: "4px", color: "#64748b", fontSize: "0.82rem" }}>{renderLinkedText(item.detail)}</div>}
                       {item.attachment_url && <a href={item.attachment_url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "5px", color: "#2563eb", fontSize: "0.8rem" }}>📎 เอกสาร PDF</a>}
                       {item.link_url && <a href={item.link_url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "5px", marginLeft: "8px", color: "#2563eb", fontSize: "0.8rem" }}>🔗 เปิดลิงก์</a>}
                     </div>
@@ -349,7 +359,7 @@ export default function StudentHome() {
                       </div>
                       <div style={{ fontSize: "0.8rem", color: "#64748b" }}>{item.month}</div>
                     </div>
-                    <div style={{ color: "#334155", fontSize: "0.95rem" }}><div>{item.title}</div>{item.detail && <div style={{ marginTop: "4px", color: "#64748b", fontSize: "0.82rem" }}>{item.detail}</div>}{item.link_url && <a href={item.link_url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "5px", color: "#2563eb", fontSize: "0.8rem" }}>🔗 เปิดลิงก์</a>}{item.attachment_url && <a href={item.attachment_url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "5px", marginLeft: "8px", color: "#2563eb", fontSize: "0.8rem" }}>📎 เอกสาร PDF</a>}</div>
+                    <div style={{ color: "#334155", fontSize: "0.95rem" }}><div>{item.title}</div>{item.detail && <div style={{ marginTop: "4px", color: "#64748b", fontSize: "0.82rem" }}>{renderLinkedText(item.detail)}</div>}{item.link_url && <a href={item.link_url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "5px", color: "#2563eb", fontSize: "0.8rem" }}>🔗 เปิดลิงก์</a>}{item.attachment_url && <a href={item.attachment_url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "5px", marginLeft: "8px", color: "#2563eb", fontSize: "0.8rem" }}>📎 เอกสาร PDF</a>}</div>
                   </div>
                 ))
               )}
