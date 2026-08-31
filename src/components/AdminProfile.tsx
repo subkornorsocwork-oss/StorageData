@@ -22,7 +22,7 @@ export default function AdminProfile() {
     contactEmail: "soc@dome.tu.ac.th",
     instagramUrl: "https://www.instagram.com/swtu_studentcommittee/",
   });
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>("/admin-profile.png");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
