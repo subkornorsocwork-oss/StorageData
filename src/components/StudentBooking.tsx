@@ -262,7 +262,7 @@ export default function StudentBooking() {
   };
 
   return (
-    <div style={{ backgroundColor:"#f1f5f9", minHeight:"100%" }}>
+    <div className="student-booking-root" style={{ backgroundColor:"#f1f5f9", minHeight:"100%" }}>
 
       {modal.isOpen && (
         <div style={{ position:"fixed", inset:0, backgroundColor:"rgba(0,0,0,0.6)", display:"flex", justifyContent:"center", alignItems:"center", zIndex:10000, padding:"20px" }}>
@@ -282,8 +282,8 @@ export default function StudentBooking() {
         </div>
       )}
 
-      <div style={{ padding:"40px" }}>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(350px, 1fr))", gap:"30px", maxWidth:"1200px", margin:"0 auto" }}>
+      <div className="student-booking-page" style={{ padding:"40px" }}>
+        <div className="student-booking-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(350px, 1fr))", gap:"30px", maxWidth:"1200px", margin:"0 auto" }}>
 
           {/* ── ซ้าย ── */}
           <section style={{ display:"flex", flexDirection:"column", gap:"25px" }}>
@@ -500,7 +500,16 @@ export default function StudentBooking() {
           </section>
         </div>
       </div>
-      <style dangerouslySetInnerHTML={{ __html:`@keyframes spin { to { transform: rotate(360deg); } }` }} />
+      <style dangerouslySetInnerHTML={{ __html:`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 768px) {
+          .student-booking-page { padding: 12px !important; }
+          .student-booking-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 14px !important; }
+          .student-booking-grid > section { min-width: 0 !important; }
+          .student-booking-grid > section > div { padding: 16px !important; border-radius: 16px !important; }
+          .student-booking-grid h1 { font-size: 1.35rem !important; line-height: 1.35 !important; }
+        }
+      ` }} />
     </div>
   );
 }

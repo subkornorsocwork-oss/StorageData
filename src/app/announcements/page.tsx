@@ -9,6 +9,7 @@ interface AnnouncementItem {
   detail: string | null;
   created_at: string;
   attachment_url: string | null;
+  link_url: string | null;
 }
 
 export default function AnnouncementPage() {
@@ -21,7 +22,7 @@ export default function AnnouncementPage() {
       setLoading(true);
       const { data, error } = await supabase
         .from("announcements")
-        .select("id, title, detail, attachment_url, created_at")
+        .select("id, title, detail, attachment_url, link_url, created_at")
         .eq("post_type", "announcement")
         .eq("is_active", true)
         .order("created_at", { ascending: false });
@@ -61,6 +62,7 @@ export default function AnnouncementPage() {
                 <h2 className="mt-2 text-xl font-semibold">{item.title}</h2>
                 <p className="mt-2 line-clamp-3 text-gray-600">{item.detail ?? "-"}</p>
                 {item.attachment_url && <a className="mt-3 inline-block text-blue-600" href={item.attachment_url} target="_blank" rel="noreferrer">📎 เปิดเอกสาร PDF</a>}
+                {item.link_url && <a className="ml-3 mt-3 inline-block text-blue-600" href={item.link_url} target="_blank" rel="noreferrer">🔗 เปิดลิงก์</a>}
               </div>
             </div>
           ))}

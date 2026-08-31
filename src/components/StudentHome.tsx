@@ -14,6 +14,7 @@ type AnnouncementItem = {
   title: string;
   detail: string | null;
   attachment_url: string | null;
+  link_url: string | null;
 };
 
 type EventItem = {
@@ -22,6 +23,8 @@ type EventItem = {
   month: string;
   title: string;
   detail: string | null;
+  link_url: string | null;
+  attachment_url: string | null;
 };
 
 const THAI_MONTHS = [
@@ -104,14 +107,14 @@ export default function StudentHome() {
         const [announcementResult, eventResult] = await Promise.all([
           supabase
             .from("announcements")
-            .select("id, title, detail, attachment_url, created_at")
+            .select("id, title, detail, attachment_url, link_url, created_at")
             .eq("post_type", "announcement")
             .eq("is_active", true)
             .order("created_at", { ascending: false })
             .limit(8),
           supabase
             .from("announcements")
-            .select("id, title, detail, event_date, created_at")
+            .select("id, title, detail, link_url, attachment_url, event_date, created_at")
             .eq("post_type", "event")
             .eq("is_active", true)
             .order("event_date", { ascending: true })
@@ -128,6 +131,7 @@ export default function StudentHome() {
             title: item.title,
             detail: item.detail ?? null,
             attachment_url: item.attachment_url ?? null,
+            link_url: item.link_url ?? null,
           })),
         );
 
@@ -137,6 +141,8 @@ export default function StudentHome() {
             ...splitThaiDate(item.event_date ?? item.created_at),
             title: item.title,
             detail: item.detail ?? null,
+            link_url: item.link_url ?? null,
+            attachment_url: item.attachment_url ?? null,
           })),
         );
       } catch (error) {
@@ -300,6 +306,7 @@ export default function StudentHome() {
                       <div>{item.title}</div>
                       {item.detail && <div style={{ marginTop: "4px", color: "#64748b", fontSize: "0.82rem" }}>{item.detail}</div>}
                       {item.attachment_url && <a href={item.attachment_url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "5px", color: "#2563eb", fontSize: "0.8rem" }}>📎 เอกสาร PDF</a>}
+                      {item.link_url && <a href={item.link_url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "5px", marginLeft: "8px", color: "#2563eb", fontSize: "0.8rem" }}>🔗 เปิดลิงก์</a>}
                     </div>
                   </div>
                 ))
@@ -342,7 +349,7 @@ export default function StudentHome() {
                       </div>
                       <div style={{ fontSize: "0.8rem", color: "#64748b" }}>{item.month}</div>
                     </div>
-                    <div style={{ color: "#334155", fontSize: "0.95rem" }}><div>{item.title}</div>{item.detail && <div style={{ marginTop: "4px", color: "#64748b", fontSize: "0.82rem" }}>{item.detail}</div>}</div>
+                    <div style={{ color: "#334155", fontSize: "0.95rem" }}><div>{item.title}</div>{item.detail && <div style={{ marginTop: "4px", color: "#64748b", fontSize: "0.82rem" }}>{item.detail}</div>}{item.link_url && <a href={item.link_url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "5px", color: "#2563eb", fontSize: "0.8rem" }}>🔗 เปิดลิงก์</a>}{item.attachment_url && <a href={item.attachment_url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "5px", marginLeft: "8px", color: "#2563eb", fontSize: "0.8rem" }}>📎 เอกสาร PDF</a>}</div>
                   </div>
                 ))
               )}

@@ -14,6 +14,7 @@ interface Announcement {
   is_active: boolean;
   created_at: string;
   attachment_url?: string | null;
+  link_url?: string | null;
 }
 
 interface Banner {
@@ -51,6 +52,7 @@ export default function AdminAnnouncements() {
   const [newDate, setNewDate] = useState("");
   const [newPinned, setNewPinned] = useState(false);
   const [announcementFile, setAnnouncementFile] = useState<File | null>(null);
+  const [newLink, setNewLink] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const [bannerFiles, setBannerFiles] = useState<File[]>([]);
@@ -66,6 +68,7 @@ export default function AdminAnnouncements() {
     setNewDate("");
     setNewPinned(false);
     setAnnouncementFile(null);
+    setNewLink("");
   };
 
   useEffect(() => {
@@ -162,6 +165,7 @@ export default function AdminAnnouncements() {
       is_active: true,
       created_by: profile?.id ?? null,
       attachment_url: attachmentUrl,
+      link_url: newLink.trim() || null,
     };
 
     const { error } = editingId
@@ -197,6 +201,8 @@ export default function AdminAnnouncements() {
     setNewDetail(item.detail ?? "");
     setNewDate(item.event_date ?? "");
     setNewPinned(item.is_pinned);
+    setNewLink(item.link_url ?? "");
+    setAnnouncementFile(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -382,13 +388,17 @@ export default function AdminAnnouncements() {
                 />
               </div>
 
-              {activeTab === "announcements" && (
+              {(activeTab === "announcements" || activeTab === "events") && (
                 <div>
-                  <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "5px" }}>เอกสารประกาศ (PDF)</label>
+                  <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "5px" }}>{isEvent ? "เอกสารกิจกรรม (PDF)" : "เอกสารประกาศ (PDF)"}</label>
                   <input type="file" accept="application/pdf,.pdf" onChange={(e) => setAnnouncementFile(e.target.files?.[0] ?? null)} />
                   {announcementFile && <p style={{ margin: "5px 0 0", fontSize: "0.78rem", color: "#64748b" }}>{announcementFile.name}</p>}
                 </div>
               )}
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "5px" }}>ลิงก์เพิ่มเติม (ถ้ามี)</label>
+                <input type="url" value={newLink} onChange={(e) => setNewLink(e.target.value)} placeholder="https://..." style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing: "border-box" }} />
+              </div>
 
               <div>
                 <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "5px" }}>รายละเอียด</label>
@@ -471,6 +481,7 @@ export default function AdminAnnouncements() {
                         </div>
                         {item.detail && <p style={{ margin: "0 0 4px", fontSize: "0.8rem", color: "#64748b" }}>{item.detail}</p>}
                         {item.attachment_url && <a href={item.attachment_url} target="_blank" rel="noreferrer" style={{ fontSize: "0.78rem", color: "#2563eb" }}>📎 เปิดเอกสาร PDF</a>}
+                        {item.link_url && <a href={item.link_url} target="_blank" rel="noreferrer" style={{ display: "block", fontSize: "0.78rem", color: "#2563eb" }}>🔗 เปิดลิงก์</a>}
                         {item.event_date && (
                           <span style={{ fontSize: "0.75rem", color: "#800000", fontWeight: 600 }}>
                             📅 {fmtDate(item.event_date)}

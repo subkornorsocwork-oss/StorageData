@@ -26,11 +26,14 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState("");
   const [faculty, setFaculty] = useState("");
   const [studentId, setStudentId] = useState("");
+  const [accountType, setAccountType] = useState<"student" | "organization" | "external" | "staff">("student");
+  const [organizationName, setOrganizationName] = useState("");
   const [phone, setPhone] = useState("");
   const [emailPrefix, setEmailPrefix] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const requiresDomeEmail = accountType === "student" || accountType === "organization";
 
   useEffect(() => {
     const checkExistingSession = async () => {
@@ -67,9 +70,16 @@ export default function LoginPage() {
       return;
     }
 
-    const fullEmail = emailPrefix.includes("@")
-      ? emailPrefix.trim()
-      : `${emailPrefix.trim()}@dome.tu.ac.th`;
+    const fullEmail = requiresDomeEmail && !emailPrefix.includes("@")
+      ? `${emailPrefix.trim()}@dome.tu.ac.th`
+      : emailPrefix.trim();
+
+    if (isRegister && accountType === "organization" && !organizationName.trim()) {
+      setErrorMsg("กรุณาระบุชื่อชุมนุม/ชมรม"); setLoading(false); return;
+    }
+    if (isRegister && requiresDomeEmail && !fullEmail.toLowerCase().endsWith("@dome.tu.ac.th")) {
+      setErrorMsg("นักศึกษาและชุมนุม/ชมรมต้องใช้อีเมล @dome.tu.ac.th"); setLoading(false); return;
+    }
 
     try {
       if (isRegister) {
@@ -103,6 +113,8 @@ export default function LoginPage() {
               student_id: studentId,
               phone,
               email: fullEmail,
+              affiliation_type: accountType,
+              organization_name: accountType === "organization" ? organizationName.trim() : null,
               role: "student",
             }),
             8000,
@@ -181,15 +193,23 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>ประเภทผู้ใช้งาน</label>
+              <select value={accountType} onChange={(e) => { setAccountType(e.target.value as typeof accountType); setStudentId(""); }} style={{ width: "100%", padding: "12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1", background: "white" }}>
+                <option value="student">นักศึกษาทั่วไป</option><option value="organization">ชุมนุม/ชมรม</option><option value="external">บุคคลภายนอก</option><option value="staff">เจ้าหน้าที่</option>
+              </select>
+            </div>
             {isRegister && (
               <>
+                {accountType === "organization" && <div><label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>ชื่อชุมนุม/ชมรม</label><input value={organizationName} onChange={e => setOrganizationName(e.target.value)} placeholder="กรอกชื่อชุมนุม/ชมรม" style={{ width: "100%", padding: "12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1" }} required /></div>}
                 <div>
                   <label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>ชื่อ-นามสกุล</label>
                   <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="กรอกชื่อ-นามสกุล" style={{ width: "100%", padding: "12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", boxSizing: "border-box" }} required />
                 </div>
 
-                <div>
-                  <label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>คณะ / วิทยาลัย</label>
+                {(accountType === "student" || accountType === "organization") ? (<>
+                  <div>
+                    <label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>คณะ / วิทยาลัย</label>
                   <select value={faculty} onChange={(e) => setFaculty(e.target.value)} style={{ width: "100%", padding: "12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", boxSizing: "border-box", backgroundColor: "white", cursor: "pointer", fontFamily: "inherit" }} required>
                     <option value="" disabled>-- โปรดเลือกคณะ --</option>
                     {[
@@ -220,13 +240,14 @@ export default function LoginPage() {
                       "สถาบันภาษา",
                       "วิทยาลัยโลกคดีศึกษา",
                     ].map((name) => <option key={name} value={name}>{name}</option>)}
-                  </select>
-                </div>
+                    </select>
+                  </div>
 
                 <div>
                   <label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>เลขทะเบียน</label>
                   <input type="text" value={studentId} onChange={(e) => setStudentId(e.target.value)} placeholder="ตัวเลข 10 หลัก" maxLength={10} style={{ width: "100%", padding: "12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", boxSizing: "border-box" }} required />
                 </div>
+                </>) : null}
 
                 <div>
                   <label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>เบอร์โทรศัพท์ติดต่อ</label>
@@ -236,12 +257,10 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>อีเมลมหาวิทยาลัย</label>
+              <label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>{requiresDomeEmail ? "อีเมลมหาวิทยาลัย" : "อีเมล"}</label>
               <div style={{ position: "relative" }}>
-                <input type="text" value={emailPrefix} onChange={(e) => setEmailPrefix(e.target.value)} placeholder="อีเมลของคุณ" style={{ width: "100%", padding: "12px 130px 12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", boxSizing: "border-box" }} required />
-                <span style={{ position: "absolute", right: "16px", top: "12px", color: "#64748b", fontSize: "0.9rem", pointerEvents: "none" }}>
-                  @dome.tu.ac.th
-                </span>
+                <input type="text" value={emailPrefix} onChange={(e) => setEmailPrefix(e.target.value)} placeholder={requiresDomeEmail ? "อีเมลของคุณ" : "example@email.com"} style={{ width: "100%", padding: requiresDomeEmail ? "12px 130px 12px 16px" : "12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", boxSizing: "border-box" }} required />
+                {requiresDomeEmail && <span style={{ position: "absolute", right: "16px", top: "12px", color: "#64748b", fontSize: "0.9rem", pointerEvents: "none" }}>@dome.tu.ac.th</span>}
               </div>
             </div>
 

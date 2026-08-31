@@ -32,6 +32,7 @@ interface LostFoundItem {
 export default function LostAndFoundPage() {
   const [items, setItems] = useState<LostFoundItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const [reportType, setReportType] = useState<"lost" | "found">("lost");
   const [itemName, setItemName] = useState("");
@@ -74,6 +75,17 @@ export default function LostAndFoundPage() {
   };
 
   useEffect(() => { fetchItems(); }, []);
+
+  useEffect(() => {
+    void supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
+  }, []);
+
+  const handleDeleteOwnItem = async (item: LostFoundItem) => {
+    if (!currentUserId || item.user_id !== currentUserId || !confirm("ยืนยันลบประกาศนี้หรือไม่?")) return;
+    const { error } = await supabase.from("lost_and_found").delete().eq("id", item.id).eq("user_id", currentUserId);
+    if (error) { alert(`ลบรายการไม่สำเร็จ: ${error.message}`); return; }
+    setItems((current) => current.filter((entry) => entry.id !== item.id));
+  };
 
   // ✅ ฟังก์ชันเลือกรูปภาพ + Preview
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -301,6 +313,7 @@ export default function LostAndFoundPage() {
                     <div style={{ fontSize: '0.85rem' }}>
                       <b>📍 สถานที่:</b> {item.location_name} | <b>📞 ติดต่อ:</b> {item.contact_info || item.contact}
                     </div>
+                    {item.user_id === currentUserId && <button onClick={() => handleDeleteOwnItem(item)} style={{ marginTop: '12px', padding: '7px 12px', border: 'none', borderRadius: '8px', background: '#fee2e2', color: '#b91c1c', fontWeight: 700, cursor: 'pointer' }}>ลบประกาศของฉัน</button>}
                   </div>
                 </div>
               ))
