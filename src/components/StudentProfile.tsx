@@ -72,7 +72,7 @@ function ContactModal({ onClose, contact }: { onClose: () => void; contact: Cont
         <h3 style={{ margin: "0 0 8px", color: "#0f172a" }}>ติดต่อเจ้าหน้าที่ กน.สค.</h3>
         <p style={{ color: "#64748b", fontSize: "0.9rem", margin: "0 0 20px" }}>สามารถติดต่อได้ผ่านช่องทางด้านล่าง</p>
         <div style={{ display: "flex", flexDirection: "column", gap: "12px", textAlign: "left" }}>
-          {[{ icon: "📍", label: "ที่ตั้ง", value: contact.location }, { icon: "📞", label: "โทรศัพท์", value: contact.phone }, { icon: "⏰", label: "เวลาทำการ", value: contact.hours }, { icon: "📧", label: "อีเมล", value: contact.email }, { icon: "📷", label: "Instagram", value: contact.instagramUrl, link: true }].map((c) => (
+          {[{ icon: "📍", label: "ที่ตั้ง", value: contact.location }, { icon: "⏰", label: "เวลาทำการ", value: contact.hours }, { icon: "📧", label: "อีเมล", value: contact.email }, { icon: "📷", label: "Instagram", value: contact.instagramUrl, link: true }].map((c) => (
             <div key={c.label} style={{ display: "flex", gap: "12px", padding: "12px", background: "#f8fafc", borderRadius: "10px" }}>
               <span style={{ fontSize: "1.2rem" }}>{c.icon}</span>
               <div>
