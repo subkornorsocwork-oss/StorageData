@@ -72,7 +72,7 @@ export default function AdminPage() {
               </div>
               <div>
                 <div style={{ fontWeight: "bold", fontSize: "0.9rem" }}>Admin Panel</div>
-                <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>กน.สค. Services</div>
+                <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>SC.SWTURS</div>
               </div>
             </div>
           )}

@@ -100,7 +100,7 @@ export default function Sidebar() {
             <div style={{ width: "35px", height: "35px", backgroundColor: "#800000", color: "white", borderRadius: "8px", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "bold", flexShrink: 0 }}>
               SOC
             </div>
-            <span style={{ fontWeight: "bold", color: "#1e293b" }}>กน.สค. Services</span>
+            <span style={{ fontWeight: "bold", color: "#1e293b" }}>SC.SWTURS</span>
           </div>
           <button onClick={() => setIsOpen(false)}
             style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "#64748b", display: isOpen ? "block" : "none" }}>

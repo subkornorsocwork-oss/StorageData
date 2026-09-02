@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { RoleProvider } from "@/context/RoleContext";
 
 export const metadata: Metadata = {
-  title: "กน.สค. Services",
+  title: "SC.SWTURS",
   icons: {
     icon: "/favicon.png?v=2",
     shortcut: "/favicon.png?v=2",
