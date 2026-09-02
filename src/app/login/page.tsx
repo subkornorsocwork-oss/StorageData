@@ -75,7 +75,7 @@ export default function LoginPage() {
       : emailPrefix.trim();
 
     if (isRegister && accountType === "organization" && !organizationName.trim()) {
-      setErrorMsg("กรุณาระบุชื่อชมรม / ชุมนุม / องค์กร"); setLoading(false); return;
+      setErrorMsg("กรุณาระบุชื่อชุมนุม / ชมรม / องค์กร"); setLoading(false); return;
     }
     if (isRegister && requiresDomeEmail && !fullEmail.toLowerCase().endsWith("@dome.tu.ac.th")) {
       setErrorMsg("นักศึกษาและชมรม / ชุมนุม / องค์กรต้องใช้อีเมล @dome.tu.ac.th"); setLoading(false); return;
@@ -203,7 +203,7 @@ export default function LoginPage() {
             </div>
             {isRegister && (
               <>
-                {accountType === "organization" && <div><label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>ชื่อชมรม / ชุมนุม / องค์กร</label><input value={organizationName} onChange={e => setOrganizationName(e.target.value)} placeholder="กรอกชื่อชมรม / ชุมนุม / องค์กร" style={{ width: "100%", padding: "12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1" }} required /></div>}
+                {accountType === "organization" && <div><label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>ชื่อชุมนุม / ชมรม / องค์กร</label><input value={organizationName} onChange={e => setOrganizationName(e.target.value)} placeholder="กรอกชื่อชุมนุม / ชมรม / องค์กร" style={{ width: "100%", padding: "12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1" }} required /></div>}
                 <div>
                   <label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>ชื่อ-นามสกุล</label>
                   <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="กรอกชื่อ-นามสกุล" style={{ width: "100%", padding: "12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", boxSizing: "border-box" }} required />
