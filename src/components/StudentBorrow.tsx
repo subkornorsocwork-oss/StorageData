@@ -374,7 +374,7 @@ export default function StudentBorrow() {
                       onChange={() => setBookerType("internal_organization")}
                       style={{ marginRight: '8px', accentColor: '#800000' }}
                     />
-                    ภายในคณะ: ชมรม/กลุ่มกิจกรรม
+                    ภายในคณะ: องค์กร / ชมรม / กลุ่มกิจกรรม
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#334155' }}>
                     <input type="radio" name="bookerType" checked={bookerType === "external"} onChange={() => setBookerType("external")} style={{ marginRight: '8px', accentColor: '#800000' }} />
