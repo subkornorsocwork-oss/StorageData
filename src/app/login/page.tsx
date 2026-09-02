@@ -173,7 +173,9 @@ export default function LoginPage() {
           TU Student<br />Services
         </h1>
         <p style={{ fontSize: "1.2rem", opacity: 0.8, lineHeight: "1.7", maxWidth: "320px", wordBreak: "break-word", overflowWrap: "anywhere" }}>
-          ระบบบริการนักศึกษาแบบครบวงจร คณะสังคมสงเคราะห์ศาสตร์ มหาวิทยาลัยธรรมศาสตร์ ศูนย์รังสิต
+          ระบบบริการนักศึกษาแบบครบวงจร<br />
+          คณะสังคมสงเคราะห์ศาสตร์<br />
+          มหาวิทยาลัยธรรมศาสตร์ ศูนย์รังสิต
         </p>
       </div>
 
@@ -209,7 +211,7 @@ export default function LoginPage() {
 
                 {(accountType === "student" || accountType === "organization") ? (<>
                   <div>
-                    <label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>คณะ / วิทยาลัย</label>
+                    <label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>คณะ/วิทยาลัย/สถาบัน</label>
                   <select value={faculty} onChange={(e) => setFaculty(e.target.value)} style={{ width: "100%", padding: "12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", boxSizing: "border-box", backgroundColor: "white", cursor: "pointer", fontFamily: "inherit" }} required>
                     <option value="" disabled>-- โปรดเลือกคณะ --</option>
                     {[
