@@ -11,8 +11,19 @@ interface UserProfile {
   email: string | null;
   phone: string | null;
   role: string;
+  affiliation_type?: "student" | "organization" | "external" | "staff" | string | null;
+  organization_name?: string | null;
   created_at: string;
 }
+
+const AFFILIATION_LABELS: Record<string, string> = {
+  student: "นักศึกษาทั่วไป",
+  organization: "ชมรม / ชุมนุม / องค์กร",
+  external: "บุคคลภายนอก",
+  staff: "เจ้าหน้าที่",
+};
+
+const getAffiliationLabel = (type?: string | null) => AFFILIATION_LABELS[type ?? "student"] ?? "นักศึกษาทั่วไป";
 
 interface UserHistory {
   bookings: any[];
@@ -146,6 +157,8 @@ export default function AdminUsers() {
             </p>
             <div style={{ textAlign: "left", borderTop: "1px solid #f1f5f9", paddingTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
               {[
+                { label: "สถานะผู้ใช้งาน", value: getAffiliationLabel(selectedUser.affiliation_type) },
+                ...(selectedUser.affiliation_type === "organization" ? [{ label: "สังกัด / ชื่อชุมนุม ชมรม องค์กร", value: selectedUser.organization_name ?? "ไม่ระบุ" }] : []),
                 { label: "คณะ", value: selectedUser.faculty ?? "-" },
                 { label: "อีเมล", value: selectedUser.email ?? "-" },
                 { label: "เบอร์โทร", value: selectedUser.phone ?? "-" },

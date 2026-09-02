@@ -10,6 +10,8 @@ export interface UserProfile {
   faculty: string;
   email: string;
   role: "student" | "admin";
+  affiliation_type?: "student" | "organization" | "external" | "staff" | string | null;
+  organization_name?: string | null;
   phone?: string | null;
   department?: string | null;
   contact_location?: string | null;

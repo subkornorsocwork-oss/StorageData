@@ -6,6 +6,15 @@ import { supabase } from "@/lib/supabase";
 
 type TabType = "booking" | "borrow" | "complaint" | "lost-found";
 
+const AFFILIATION_LABELS: Record<string, string> = {
+  student: "นักศึกษาทั่วไป",
+  organization: "ชมรม / ชุมนุม / องค์กร",
+  external: "บุคคลภายนอก",
+  staff: "เจ้าหน้าที่",
+};
+
+const getAffiliationLabel = (type?: string | null) => AFFILIATION_LABELS[type ?? "student"] ?? "นักศึกษาทั่วไป";
+
 // ── Modal แก้ไขข้อมูลส่วนตัว ──
 function EditProfileModal({ userData, onClose, onSave }: {
   userData: { name: string; faculty: string; email: string; phone: string };
@@ -178,7 +187,7 @@ export default function StudentProfile() {
   const [saveMsg, setSaveMsg]                     = useState("");
   const router = useRouter();
 
-  const [userData, setUserData] = useState({ name: "กำลังโหลด...", id: "-", faculty: "-", email: "-", phone: "-" });
+  const [userData, setUserData] = useState({ name: "กำลังโหลด...", id: "-", faculty: "-", email: "-", phone: "-", affiliationType: "student", organizationName: "" });
   const [userId, setUserId]     = useState<string | null>(null);
 
   const [bookings, setBookings]     = useState<any[]>([]);
@@ -200,7 +209,7 @@ export default function StudentProfile() {
 
         const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
         if (profile) {
-          setUserData({ name: profile.full_name ?? "ไม่ระบุชื่อ", id: profile.student_id ?? "-", faculty: profile.faculty ?? "-", email: profile.email ?? "-", phone: profile.phone ?? "-" });
+          setUserData({ name: profile.full_name ?? "ไม่ระบุชื่อ", id: profile.student_id ?? "-", faculty: profile.faculty ?? "-", email: profile.email ?? "-", phone: profile.phone ?? "-", affiliationType: profile.affiliation_type ?? "student", organizationName: profile.organization_name ?? "" });
         }
 
         const { data: bkData } = await supabase.from("bookings").select("*, locations(name)").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
@@ -292,7 +301,13 @@ export default function StudentProfile() {
               <p style={{ color: "#64748b", fontSize: "0.85rem", marginBottom: "16px" }}>{userData.id}</p>
 
               <div style={{ textAlign: "left", borderTop: "1px solid #f1f5f9", paddingTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                {[{ label: "คณะ", value: userData.faculty }, { label: "อีเมล", value: userData.email }, { label: "เบอร์โทรศัพท์", value: userData.phone }].map((item) => (
+                {[
+                  { label: "สถานะผู้ใช้งาน", value: getAffiliationLabel(userData.affiliationType) },
+                  ...(userData.affiliationType === "organization" ? [{ label: "สังกัด / ชื่อชุมนุม ชมรม องค์กร", value: userData.organizationName || "ไม่ระบุ" }] : []),
+                  { label: "คณะ", value: userData.faculty },
+                  { label: "อีเมล", value: userData.email },
+                  { label: "เบอร์โทรศัพท์", value: userData.phone },
+                ].map((item) => (
                   <div key={item.label}>
                     <div style={{ fontSize: "0.68rem", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>{item.label}</div>
                     <div style={{ fontSize: "0.88rem", color: "#334155", fontWeight: 500, wordBreak: "break-word" }}>{item.value}</div>
