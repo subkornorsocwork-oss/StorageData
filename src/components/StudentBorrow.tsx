@@ -62,7 +62,7 @@ export default function StudentBorrow() {
   const fetchEquipments = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.from('equipment').select('*');
+      const { data, error } = await supabase.from('equipment').select('*').eq('is_active', true);
 
       if (error) throw error;
 
