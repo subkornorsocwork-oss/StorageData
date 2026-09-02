@@ -20,7 +20,7 @@ export default function AdminProfile() {
     contactPhone: "02-xxx-xxxx",
     contactHours: "จ-ศ 08:30 - 16:30 น.",
     contactEmail: "soc@dome.tu.ac.th",
-    instagramUrl: "https://www.instagram.com/swtu_studentcommittee/",
+    instagramUrl: "https://linkbio.co/8082009ugIpAI",
   });
   const [profileImage, setProfileImage] = useState<string | null>("/admin-profile.png");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -49,7 +49,7 @@ export default function AdminProfile() {
       contactPhone: profile.contact_phone || profile.phone || "02-xxx-xxxx",
       contactHours: profile.contact_hours || "จ-ศ 08:30 - 16:30 น.",
       contactEmail: profile.contact_email || "soc@dome.tu.ac.th",
-      instagramUrl: profile.instagram_url || "https://www.instagram.com/swtu_studentcommittee/",
+      instagramUrl: profile.instagram_url || "https://linkbio.co/8082009ugIpAI",
     };
 
     setAdminInfo(nextInfo);
@@ -59,7 +59,7 @@ export default function AdminProfile() {
     setEditContactPhone(profile.contact_phone || profile.phone || "");
     setEditContactHours(profile.contact_hours || "จ-ศ 08:30 - 16:30 น.");
     setEditContactEmail(profile.contact_email || "soc@dome.tu.ac.th");
-    setEditInstagramUrl(profile.instagram_url || "https://www.instagram.com/swtu_studentcommittee/");
+    setEditInstagramUrl(profile.instagram_url || "https://linkbio.co/8082009ugIpAI");
 
     const loadActivityLogs = async () => {
       const [announcementResult, bookingResult, borrowResult] = await Promise.all([
@@ -245,7 +245,7 @@ export default function AdminProfile() {
               </div>
               <div><p style={{ margin: "0 0 5px 0", color: "#64748b", fontSize: "0.85rem" }}>ที่ตั้ง</p><p style={{ margin: 0, color: "#1e293b", fontWeight: "bold" }}>{adminInfo.contactLocation}</p></div>
               <div><p style={{ margin: "0 0 5px 0", color: "#64748b", fontSize: "0.85rem" }}>เวลาทำการ</p><p style={{ margin: 0, color: "#1e293b", fontWeight: "bold" }}>{adminInfo.contactHours}</p></div>
-              <div><p style={{ margin: "0 0 5px 0", color: "#64748b", fontSize: "0.85rem" }}>Instagram</p><a href={adminInfo.instagramUrl} target="_blank" rel="noreferrer" style={{ color: "#2563eb", fontWeight: "bold" }}>เปิด Instagram</a></div>
+              <div><p style={{ margin: "0 0 5px 0", color: "#64748b", fontSize: "0.85rem" }}>รวมช่องทางการติดต่อ</p><a href={adminInfo.instagramUrl} target="_blank" rel="noreferrer" style={{ color: "#2563eb", fontWeight: "bold" }}>เปิดรวมช่องทางการติดต่อ</a></div>
               <div>
                 <p style={{ margin: "0 0 5px 0", color: "#64748b", fontSize: "0.85rem" }}>เบอร์โทรศัพท์</p>
                 <p style={{ margin: 0, color: "#1e293b", fontWeight: "bold" }}>{adminInfo.contactPhone}</p>
@@ -299,7 +299,7 @@ export default function AdminProfile() {
               <label style={{ display: "block", fontSize: "0.85rem", color: "#64748b", marginBottom: "5px" }}>สังกัด / หน่วยงาน</label>
               <input type="text" value={editDepartment} onChange={(e) => setEditDepartment(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1" }} />
             </div>
-            {[{ label: "ที่ตั้ง", value: editContactLocation, set: setEditContactLocation }, { label: "เบอร์โทรสำหรับติดต่อ", value: editContactPhone, set: setEditContactPhone }, { label: "เวลาทำการ", value: editContactHours, set: setEditContactHours }, { label: "อีเมลสำหรับติดต่อ", value: editContactEmail, set: setEditContactEmail }, { label: "ลิงก์ Instagram", value: editInstagramUrl, set: setEditInstagramUrl }].map((field) => (
+            {[{ label: "ที่ตั้ง", value: editContactLocation, set: setEditContactLocation }, { label: "เบอร์โทรสำหรับติดต่อ", value: editContactPhone, set: setEditContactPhone }, { label: "เวลาทำการ", value: editContactHours, set: setEditContactHours }, { label: "อีเมลสำหรับติดต่อ", value: editContactEmail, set: setEditContactEmail }, { label: "ลิงก์รวมช่องทางการติดต่อ", value: editInstagramUrl, set: setEditInstagramUrl }].map((field) => (
               <div key={field.label} style={{ marginBottom: "15px" }}>
                 <label style={{ display: "block", fontSize: "0.85rem", color: "#64748b", marginBottom: "5px" }}>{field.label}</label>
                 <input type="text" value={field.value} onChange={(e) => field.set(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", boxSizing: "border-box" }} />

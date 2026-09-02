@@ -72,12 +72,12 @@ function ContactModal({ onClose, contact }: { onClose: () => void; contact: Cont
         <h3 style={{ margin: "0 0 8px", color: "#0f172a" }}>ติดต่อเจ้าหน้าที่ กน.สค.</h3>
         <p style={{ color: "#64748b", fontSize: "0.9rem", margin: "0 0 20px" }}>สามารถติดต่อได้ผ่านช่องทางด้านล่าง</p>
         <div style={{ display: "flex", flexDirection: "column", gap: "12px", textAlign: "left" }}>
-          {[{ icon: "📍", label: "ที่ตั้ง", value: contact.location }, { icon: "⏰", label: "เวลาทำการ", value: contact.hours }, { icon: "📧", label: "อีเมล", value: contact.email }, { icon: "📷", label: "Instagram", value: contact.instagramUrl, link: true }].map((c) => (
+          {[{ icon: "📍", label: "ที่ตั้ง", value: contact.location }, { icon: "⏰", label: "เวลาทำการ", value: contact.hours }, { icon: "📧", label: "อีเมล", value: contact.email }, { icon: "🔗", label: "รวมช่องทางการติดต่อ", value: contact.instagramUrl, link: true }].map((c) => (
             <div key={c.label} style={{ display: "flex", gap: "12px", padding: "12px", background: "#f8fafc", borderRadius: "10px" }}>
               <span style={{ fontSize: "1.2rem" }}>{c.icon}</span>
               <div>
                 <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{c.label}</div>
-                {c.link ? <a href={c.value} target="_blank" rel="noreferrer" style={{ fontSize: "0.9rem", fontWeight: 600, color: "#2563eb", overflowWrap: "anywhere" }}>เปิด Instagram</a> : <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#334155" }}>{c.value}</div>}
+                {c.link ? <a href={c.value} target="_blank" rel="noreferrer" style={{ fontSize: "0.9rem", fontWeight: 600, color: "#2563eb", overflowWrap: "anywhere" }}>เปิดรวมช่องทางการติดต่อ</a> : <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#334155" }}>{c.value}</div>}
               </div>
             </div>
           ))}
@@ -169,7 +169,7 @@ export default function StudentProfile() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen]     = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
-  const [contact, setContact] = useState<ContactInfo>({ location: "ชั้น 1 อาคาร กน.สค.", phone: "02-xxx-xxxx", hours: "จ-ศ 08:30 - 16:30 น.", email: "soc@dome.tu.ac.th", instagramUrl: "https://www.instagram.com/swtu_studentcommittee/" });
+  const [contact, setContact] = useState<ContactInfo>({ location: "ชั้น 1 อาคาร กน.สค.", phone: "02-xxx-xxxx", hours: "จ-ศ 08:30 - 16:30 น.", email: "soc@dome.tu.ac.th", instagramUrl: "https://linkbio.co/8082009ugIpAI" });
   const [selectedItem, setSelectedItem]           = useState<{ item: any; type: TabType } | null>(null);
   const [returnProofBorrow, setReturnProofBorrow] = useState<any | null>(null);
   const [returnProofFile, setReturnProofFile]     = useState<File | null>(null);
@@ -196,7 +196,7 @@ export default function StudentProfile() {
         setUserId(user.id);
 
         const { data: contactProfile } = await supabase.from("profiles").select("contact_location, contact_phone, contact_hours, contact_email, instagram_url").eq("role", "admin").limit(1).maybeSingle();
-        if (contactProfile) setContact((prev) => ({ location: contactProfile.contact_location || prev.location, phone: contactProfile.contact_phone || prev.phone, hours: contactProfile.contact_hours || prev.hours, email: contactProfile.contact_email || prev.email, instagramUrl: contactProfile.instagram_url || prev.instagramUrl }));
+        if (contactProfile) setContact((prev) => ({ location: contactProfile.contact_location || prev.location, phone: contactProfile.contact_phone || prev.phone, hours: contactProfile.contact_hours || prev.hours, email: contactProfile.contact_email || prev.email, instagramUrl: contactProfile.instagram_url || "https://linkbio.co/8082009ugIpAI" }));
 
         const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
         if (profile) {
