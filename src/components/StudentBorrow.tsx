@@ -62,7 +62,12 @@ export default function StudentBorrow() {
   const fetchEquipments = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.from('equipment').select('*').eq('is_active', true);
+      const { data, error } = await supabase
+        .from('equipment')
+        .select('*')
+        .eq('is_active', true)
+        .gt('available_qty', 0)
+        .order('barcode', { ascending: true, nullsFirst: false });
 
       if (error) throw error;
 
@@ -294,7 +299,7 @@ export default function StudentBorrow() {
                </div>
             ) : equipment.length === 0 ? (
                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b', backgroundColor: 'white', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
-                 ยังไม่มีข้อมูลอุปกรณ์ในระบบ
+                 ยังไม่มีอุปกรณ์ที่พร้อมให้ยืมในระบบ
                </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
