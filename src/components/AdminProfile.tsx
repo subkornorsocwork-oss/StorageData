@@ -22,7 +22,7 @@ export default function AdminProfile() {
     contactEmail: "soc@dome.tu.ac.th",
     instagramUrl: "https://linkbio.co/8082009ugIpAI",
   });
-  const [profileImage, setProfileImage] = useState<string | null>("/admin-profile.png");
+  const [profileImage, setProfileImage] = useState<string | null>("/favicon.png?v=3");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);

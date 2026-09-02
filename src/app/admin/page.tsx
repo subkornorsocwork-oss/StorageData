@@ -67,9 +67,7 @@ export default function AdminPage() {
         <div style={{ padding: "16px 12px", borderBottom: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: "72px" }}>
           {sidebarOpen && (
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div style={{ width: "36px", height: "36px", backgroundColor: "#800000", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "0.85rem", flexShrink: 0 }}>
-                SOC
-              </div>
+              <img src="/favicon.png?v=3" alt="SC.SWTURS" style={{ width: "36px", height: "36px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }} />
               <div>
                 <div style={{ fontWeight: "bold", fontSize: "0.9rem" }}>Admin Panel</div>
                 <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>SC.SWTURS</div>

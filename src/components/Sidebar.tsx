@@ -97,9 +97,7 @@ export default function Sidebar() {
       <aside className={`sidebar-wrapper ${isOpen ? "open" : ""}`}>
         <div style={{ padding: "20px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "35px", height: "35px", backgroundColor: "#800000", color: "white", borderRadius: "8px", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "bold", flexShrink: 0 }}>
-              SOC
-            </div>
+            <img src="/favicon.png?v=3" alt="SC.SWTURS" style={{ width: "35px", height: "35px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }} />
             <span style={{ fontWeight: "bold", color: "#1e293b" }}>SC.SWTURS</span>
           </div>
           <button onClick={() => setIsOpen(false)}
