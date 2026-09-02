@@ -75,10 +75,10 @@ export default function LoginPage() {
       : emailPrefix.trim();
 
     if (isRegister && accountType === "organization" && !organizationName.trim()) {
-      setErrorMsg("กรุณาระบุชื่อชุมนุม/ชมรม"); setLoading(false); return;
+      setErrorMsg("กรุณาระบุชื่อชมรม / ชุมนุม / องค์กร"); setLoading(false); return;
     }
     if (isRegister && requiresDomeEmail && !fullEmail.toLowerCase().endsWith("@dome.tu.ac.th")) {
-      setErrorMsg("นักศึกษาและชุมนุม/ชมรมต้องใช้อีเมล @dome.tu.ac.th"); setLoading(false); return;
+      setErrorMsg("นักศึกษาและชมรม / ชุมนุม / องค์กรต้องใช้อีเมล @dome.tu.ac.th"); setLoading(false); return;
     }
 
     try {
@@ -198,12 +198,12 @@ export default function LoginPage() {
             <div>
               <label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>ประเภทผู้ใช้งาน</label>
               <select value={accountType} onChange={(e) => { setAccountType(e.target.value as typeof accountType); setStudentId(""); }} style={{ width: "100%", padding: "12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1", background: "white" }}>
-                <option value="student">นักศึกษาทั่วไป</option><option value="organization">ชุมนุม/ชมรม</option><option value="external">บุคคลภายนอก</option><option value="staff">เจ้าหน้าที่</option>
+                <option value="student">นักศึกษาทั่วไป</option><option value="organization">ชมรม / ชุมนุม / องค์กร</option><option value="external">บุคคลภายนอก</option><option value="staff">เจ้าหน้าที่</option>
               </select>
             </div>
             {isRegister && (
               <>
-                {accountType === "organization" && <div><label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>ชื่อชุมนุม/ชมรม</label><input value={organizationName} onChange={e => setOrganizationName(e.target.value)} placeholder="กรอกชื่อชุมนุม/ชมรม" style={{ width: "100%", padding: "12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1" }} required /></div>}
+                {accountType === "organization" && <div><label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>ชื่อชมรม / ชุมนุม / องค์กร</label><input value={organizationName} onChange={e => setOrganizationName(e.target.value)} placeholder="กรอกชื่อชมรม / ชุมนุม / องค์กร" style={{ width: "100%", padding: "12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1" }} required /></div>}
                 <div>
                   <label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>ชื่อ-นามสกุล</label>
                   <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="กรอกชื่อ-นามสกุล" style={{ width: "100%", padding: "12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", boxSizing: "border-box" }} required />
@@ -211,7 +211,7 @@ export default function LoginPage() {
 
                 {(accountType === "student" || accountType === "organization") ? (<>
                   <div>
-                    <label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>คณะ/วิทยาลัย/สถาบัน</label>
+                    <label style={{ display: "block", marginBottom: "8px", fontSize: "0.9rem", color: "#334155", fontWeight: "bold" }}>คณะ / วิทยาลัย / สถาบัน</label>
                   <select value={faculty} onChange={(e) => setFaculty(e.target.value)} style={{ width: "100%", padding: "12px 16px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", boxSizing: "border-box", backgroundColor: "white", cursor: "pointer", fontFamily: "inherit" }} required>
                     <option value="" disabled>-- โปรดเลือกคณะ --</option>
                     {[
