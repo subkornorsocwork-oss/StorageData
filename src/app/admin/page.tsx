@@ -8,6 +8,7 @@ import AdminLostFound from "@/components/AdminLostFound";
 import AdminAnnouncements from "@/components/AdminAnnouncements";
 import AdminUsers from "@/components/AdminUsers";
 import AdminProfile from "@/components/AdminProfile";
+import AdminNotifications from "@/components/AdminNotifications";
 import { useRole } from "@/context/RoleContext";
 
 type AdminTab = "dashboard"|"booking"|"borrow"|"complaint"|"lostfound"|"announcements"|"users"|"profile";
@@ -118,6 +119,7 @@ export default function AdminPage() {
 
       {/* Content */}
       <main style={{ flex: 1, minWidth: 0, overflowY: "auto" }}>
+        <AdminNotifications onNavigate={(tab) => setActiveTab(tab)} />
         {renderContent()}
       </main>
     </div>
