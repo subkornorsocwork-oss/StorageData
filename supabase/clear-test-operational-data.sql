@@ -21,5 +21,8 @@ delete from public.user_service_restrictions;
 -- The dashboard's recent activity is derived from these records.
 delete from public.activity_logs;
 
-commit;
+-- The system is empty after the cleanup, so every catalog item is available.
+update public.equipment
+set available_qty = total_qty;
 
+commit;
