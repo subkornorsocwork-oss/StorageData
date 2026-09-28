@@ -38,6 +38,11 @@ const fmtDate = (d: string) => {
   return `${dt.getDate()} ${THAI_MONTHS[dt.getMonth()]} ${dt.getFullYear() + 543}`;
 };
 
+const fmtDateTime = (d: string) => {
+  const dt = new Date(d);
+  return `${fmtDate(d)} เวลา ${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")} น.`;
+};
+
 export default function AdminUsers() {
   const [users, setUsers]               = useState<UserProfile[]>([]);
   const [loading, setLoading]           = useState(true);
@@ -220,7 +225,7 @@ export default function AdminUsers() {
                       <div key={b.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px dashed #f1f5f9" }}>
                         <div>
                           <div style={{ fontWeight: 600, fontSize: "0.875rem", color: "#1e293b" }}>{items}</div>
-                          <div style={{ fontSize: "0.78rem", color: "#64748b" }}>ยืม: {fmtDate(b.borrow_date)}</div>
+                          <div style={{ fontSize: "0.78rem", color: "#64748b" }}>ยืม: {fmtDateTime(b.borrow_date)}</div>
                         </div>
                         <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748b" }}>
                           {borrowStatusText[b.status] ?? b.status}

@@ -439,7 +439,7 @@ export default function AdminBorrow() {
                       const documentUrl = req.document_url;
                       return (
                         <tr key={req.id} style={{ borderBottom:"1px solid #f1f5f9", backgroundColor: over ? "#fef2f2" : idx%2===0 ? "white" : "#fafafa" }}>
-                          <td style={{ padding:"12px 14px", fontSize:"0.85rem" }}>{fmtDate(req.borrow_date)}</td>
+                          <td style={{ padding:"12px 14px", fontSize:"0.85rem" }}>{fmtDateTime(req.borrow_date)}</td>
                           <td style={{ padding:"12px 14px", fontSize:"0.85rem", color: over ? "#b91c1c" : "#ef4444", fontWeight:600 }}>{fmtDateTime(req.return_due_date)}</td>
                           <td style={{ padding:"12px 14px" }}>
                             <div style={{ fontWeight:600, fontSize:"0.875rem" }}>{req.user_name}</div>
@@ -599,7 +599,7 @@ export default function AdminBorrow() {
             <div style={{ backgroundColor:"#f8fafc", padding:"14px", borderRadius:"10px", marginBottom:"16px", fontSize:"0.875rem", lineHeight:"1.9" }}>
               <div><b>ผู้ยืม:</b> {actionModal.req.user_name} ({actionModal.req.student_id})</div>
               <div><b>อุปกรณ์:</b> {actionModal.req.borrow_items?.map(i => `${i.equipment?.name} x${i.quantity}`).join(", ") ?? "-"}</div>
-              <div><b>วันยืม:</b> {fmtDate(actionModal.req.borrow_date)}</div>
+              <div><b>วันยืม:</b> {fmtDateTime(actionModal.req.borrow_date)}</div>
               <div><b>กำหนดคืน:</b> {fmtDateTime(actionModal.req.return_due_date)}</div>
               <div><b>วัตถุประสงค์:</b> {actionModal.req.purpose ?? "-"}</div>
             </div>

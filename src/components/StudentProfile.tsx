@@ -107,6 +107,11 @@ function DetailModal({ item, type, onClose }: { item: any; type: TabType; onClos
     const dt = new Date(d);
     return `${dt.getDate()} ${months[dt.getMonth()]} ${dt.getFullYear()}`;
   };
+  const formatDateTime = (d: string) => {
+    if (!d) return "-";
+    const dt = new Date(d);
+    return `${formatDate(d)} เวลา ${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")} น.`;
+  };
 
   const rows: { label: string; value: string }[] = [];
 
@@ -123,8 +128,8 @@ function DetailModal({ item, type, onClose }: { item: any; type: TabType; onClos
     const items = item.borrow_items?.map((i: any) => `${i.equipment?.emoji ?? "📦"} ${i.equipment?.name} x${i.quantity}`).join(", ") ?? "-";
     rows.push(
       { label: "อุปกรณ์", value: items },
-      { label: "วันยืม", value: formatDate(item.borrow_date) },
-      { label: "กำหนดคืน", value: formatDate(item.return_due_date) },
+      { label: "วันและเวลายืม", value: formatDateTime(item.borrow_date) },
+      { label: "วันและเวลาคืน", value: formatDateTime(item.return_due_date) },
       { label: "สถานะ", value: { pending:"รอดำเนินการ", borrowing:"กำลังยืม", returned:"คืนแล้ว", overdue:"เกินกำหนด", cancelled:"ยกเลิก" }[item.status as string] ?? item.status },
     );
   } else if (type === "complaint") {
@@ -281,6 +286,12 @@ export default function StudentProfile() {
     return `${dt.getDate()} ${months[dt.getMonth()]} ${dt.getFullYear()}`;
   };
 
+  const formatDateTime = (d: string) => {
+    if (!d) return "-";
+    const dt = new Date(d);
+    return `${formatDate(d)} เวลา ${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")} น.`;
+  };
+
   const bookingStatusColor: Record<string, string> = { pending: "#f59e0b", approved: "#16a34a", rejected: "#ef4444", cancelled: "#94a3b8" };
   const bookingStatusText: Record<string, string>  = { pending: "รอตรวจสอบ", approved: "อนุมัติแล้ว", rejected: "ไม่อนุมัติ", cancelled: "ยกเลิก" };
   const borrowStatusColor: Record<string, string>  = { pending: "#f59e0b", borrowing: "#3b82f6", returned: "#16a34a", overdue: "#ef4444", cancelled: "#94a3b8" };
@@ -365,7 +376,7 @@ export default function StudentProfile() {
                     return (
                       <HistoryItem key={b.id}
                         title={items}
-                        desc={`ยืม: ${formatDate(b.borrow_date)} | คืน: ${formatDate(b.return_due_date)}`}
+                        desc={`ยืม: ${formatDateTime(b.borrow_date)} | คืน: ${formatDateTime(b.return_due_date)}`}
                         statusColor={borrowStatusColor[b.status]}
                         statusText={borrowStatusText[b.status]}
                         onDetail={() => setSelectedItem({ item: b, type: "borrow" })} // ✅
